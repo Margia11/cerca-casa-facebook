@@ -12,6 +12,9 @@
 // pubblicato in gruppi diversi. Quando lo scorrimento incontra STOP_DOPO_VISTI post già visti,
 // si ferma prima: significa che da lì in giù il feed era già stato letto.
 //
+// Per ogni post salva anche gli indirizzi delle prime foto (max 4): leggi-risultati.js ne calcola
+// l'impronta visiva per riconoscere gli annunci ripubblicati.
+//
 // Parametri: SCORRIMENTI (massimo, default 16 ≈ 35-40 s) e STOP_DOPO_VISTI (default 8).
 
 const SCORRIMENTI = 16;
@@ -67,11 +70,19 @@ window.__cc = { seen: {}, done: false, steps: 0, giaVisti: 0, fermatoPrima: fals
       const links = [...d.querySelectorAll('a[href*="/posts/"],a[href*="/permalink/"]')].map(
         (a) => a.href.split('?')[0]
       );
+      // foto del post (escluse le immagini del profilo e le miniature), per l'impronta visiva
+      const img = [...d.querySelectorAll('img')]
+        .filter((i) => i.naturalWidth >= 300 && i.width >= 100 && !/\/t39\.30808-1\//.test(i.src))
+        .map((i) => i.src)
+        .slice(0, 4);
       const prev = window.__cc.seen[k];
       if (!prev) {
-        window.__cc.seen[k] = { k, l: links[0] || '', t: t.slice(0, 1200), visto: visti.has(k) };
+        window.__cc.seen[k] = { k, l: links[0] || '', t: t.slice(0, 1200), img, visto: visti.has(k) };
         if (visti.has(k)) window.__cc.giaVisti++;
-      } else if (!prev.l && links[0]) prev.l = links[0];
+      } else {
+        if (!prev.l && links[0]) prev.l = links[0];
+        if (!prev.img.length && img.length) prev.img = img;
+      }
     }
   };
 

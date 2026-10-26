@@ -1,6 +1,6 @@
 ---
 name: cerca-casa-facebook
-description: Cerca stanze, monolocali o appartamenti in affitto nei gruppi Facebook di una città secondo i criteri personali salvati in config.md, ricorda gli annunci già visti, li salva in una tabella con lo stato di ciascuno, legge le foto dei candidati e può girare in automatico con notifica. Al primo avvio guida la configurazione e trova i gruppi giusti. Usare quando l'utente chiede di cercare casa o stanza su Facebook o lancia /cerca-casa-facebook.
+description: Cerca stanze, monolocali o appartamenti in affitto nei gruppi Facebook di una città secondo i criteri personali salvati in config.md, ricorda gli annunci già visti, li salva in una tabella con lo stato di ciascuno, mostra i prezzi tipici per zona, riconosce gli annunci ripubblicati, legge le foto dei candidati e può girare in automatico con notifica. Al primo avvio guida la configurazione e trova i gruppi giusti. Usare quando l'utente chiede di cercare casa o stanza su Facebook o lancia /cerca-casa-facebook.
 ---
 
 # Cerca casa nei gruppi Facebook
@@ -27,12 +27,13 @@ Legge i post recenti dei gruppi Facebook di affitti usando il **browser dell'ute
 2. **File locali**: `annunci.json` e `memoria.json` nella stessa cartella di `config.md`. A fine ricerca, mostrare all'utente la shortlist in chat.
 
 Struttura dei dati (uguale in entrambi i casi):
-- **annunci**: un elemento per annuncio, con id = impronta `k…` calcolata dallo script (se manca, uno slug breve). Campi: `titolo`, `tipologia`, `prezzo` (numero, se noto), `prezzo_testo`, `zona`, `metro` (lettere delle linee separate da spazio, es. "A B"), `dettagli`, `note`, `link`, `altri_link` (lista), `gruppo`, `autore`, `categoria` (`shortlist` | `quasi` | `sospetto`), `stato`, `punteggio`, `trovato_il` (ISO), `foto_lette`.
+- **annunci**: un elemento per annuncio, con id = impronta `k…` calcolata dallo script (se manca, uno slug breve). Campi: `titolo`, `tipologia`, `prezzo` (numero, se noto), `prezzo_testo`, `zona`, `metro` (lettere delle linee separate da spazio, es. "A B"), `dettagli`, `note`, `link`, `altri_link` (lista), `gruppo`, `autore`, `categoria` (`shortlist` | `quasi` | `sospetto`), `stato`, `punteggio`, `trovato_il` (ISO), `foto_lette`, `mediana_zona`, `confronto_prezzo`, `ripubblicato`.
 - **stato**: `nuovo`, `contattare`, `scritto`, `visita`, `scartato`, `affittato`. La skill crea gli annunci con `nuovo` e **non cambia mai lo stato scelto dall'utente**, salvo impostare `affittato` quando il post o i commenti dicono che non è più disponibile.
 - **memoria/visti**: campo `k` = mappa `{impronta: "AAAA-MM-GG"}` di tutti i post già letti (offerte e richieste), per non rileggerli né riproporli. Tenere solo gli ultimi 21 giorni.
+- **prezzi**: prezzi di tutte le offerte lette, raggruppati per mese (sezione "Prezzi per zona").
 - **memoria/stato**: `ultima_ricerca`, `gruppi_letti`, `post_letti`, `nuovi_trovati`, `gruppi_saltati`, e facoltativi `titolo` e `criteri` (una riga) che la tabella mostra in alto.
 
-Con la tabella online: collezione `annunci` (un documento per annuncio) e collezione `memoria` (documenti `visti` e `stato`). Ogni scrittura su un documento esistente richiede `if_version`; usare `batch` (massimo 50 scritture).
+Con la tabella online: collezione `annunci` (un documento per annuncio) e collezione `memoria` (documenti `visti` e `stato`) e collezione `prezzi` (un documento per mese). Con i file locali: `annunci.json`, `memoria.json` e `prezzi.json`. Ogni scrittura su un documento esistente richiede `if_version`; usare `batch` (massimo 50 scritture).
 
 ## 2. Configurazione guidata (solo al primo avvio)
 
@@ -49,7 +50,7 @@ Con la tabella online: collezione `annunci` (un documento per annuncio) e collez
 
 ## 3. Lettura dei gruppi
 
-1. Caricare la memoria: impronte viste (`memoria/visti`) e annunci già salvati.
+1. Caricare la memoria: impronte viste (`memoria/visti`), annunci già salvati e voci di prezzo degli ultimi 3 mesi.
 2. Per ogni gruppo della lista (in ordine; se il tempo è limitato, almeno i primi 6–7):
    - aprire `https://www.facebook.com/groups/<ID>/?sorting_setting=CHRONOLOGICAL`;
    - eseguire con lo strumento JavaScript del browser `window.__visti = [...]` (tutte le impronte viste) seguito, **nella stessa chiamata**, da `scripts/raccogli-feed.js`. Lo script scorre il feed in background e si ferma da solo quando incontra 8 post già letti;
@@ -76,6 +77,8 @@ Classificazione: `shortlist` (rispetta tutto) · `quasi` (manca un solo criterio
 
 Se un'offerta ha un'impronta già presente tra gli annunci salvati, non ricrearla: se compare in un altro gruppo, aggiungere il link a `altri_link`.
 
+Per ogni offerta nuova (anche se scartata) preparare la voce di prezzo; per ogni annuncio da salvare calcolare il confronto con la mediana e controllare se è ripubblicato (sezioni "Prezzi per zona" e "Annunci ripubblicati").
+
 ## 5. Foto dei candidati
 
 Molti annunci hanno prezzo, letto o planimetria solo nelle immagini. Per ogni annuncio `shortlist` o `quasi` a cui manca un dato decisivo:
@@ -89,15 +92,49 @@ Molti annunci hanno prezzo, letto o planimetria solo nelle immagini. Per ogni an
 
 **Punteggio**: +3 zona confermata, +1 zona da verificare · +2 per ogni preferenza soddisfatta · +1 spese incluse · +1 privato (non agenzia) · +1 contratto regolare · −1 per ogni dato chiave mancante (prezzo, zona).
 
-**Salvataggio**: aggiungere i nuovi annunci con `stato: "nuovo"`; aggiornare quelli esistenti solo per `altri_link` o `affittato`; aggiungere a `memoria/visti` tutte le `impronte_lette` con la data di oggi (togliendo quelle oltre 21 giorni); aggiornare `memoria/stato`.
+**Salvataggio**: aggiungere i nuovi annunci con `stato: "nuovo"`; aggiornare quelli esistenti solo per `altri_link` o `affittato`; aggiungere a `memoria/visti` tutte le `impronte_lette` con la data di oggi (togliendo quelle oltre 21 giorni); aggiungere le nuove voci di prezzo al mese corrente in `prezzi`; aggiornare `memoria/stato`.
 
 **Risposta** (nella lingua di `config.md`):
 1. una riga di riepilogo: gruppi letti e saltati, post letti, quanti erano già visti, annunci nuovi;
-2. solo gli annunci **nuovi** di questo giro: **[Tipologia] – [prezzo] – [zona]**, poi i dettagli rilevanti, il link e le note (domande da fare all'inserzionista);
+2. solo gli annunci **nuovi** di questo giro: **[Tipologia] – [prezzo] – [zona]**, poi i dettagli rilevanti, il confronto con il prezzo della zona, l'eventuale avviso di annuncio ripubblicato, il link e le note (domande da fare all'inserzionista);
 3. i nuovi "quasi" e "sospetti", una riga ciascuno con il motivo;
 4. se non c'è nulla di nuovo, dirlo in una riga; ricordare dove si trova la tabella.
 
 Se l'utente vuole contattare un inserzionista, preparare un messaggio da copiare con le domande che mancano; inviarlo solo dopo conferma esplicita.
+
+## 6b. Prezzi per zona
+
+A ogni ricerca si registra il prezzo di **tutte** le offerte nuove lette nella città, anche quelle fuori dai criteri: servono per capire il prezzo tipico.
+
+- Dove: collezione **`prezzi`**, un documento per mese (id `AAAA-MM`, es. `2026-10`) con il campo `voci` = lista. Una voce per offerta: `{k, kt, fh, a, d, z, q, t, p, s}`:
+  `k` impronta del post · `kt` impronta del testo · `fh` impronte delle foto (lista) · `a` autore · `d` data (AAAA-MM-GG) · `z` zona come scritta nell'annuncio · `q` **quartiere normalizzato** · `t` **tipologia normalizzata** · `p` prezzo mensile in euro (numero) · `s` true se le spese sono incluse.
+- Tipologie normalizzate (usare sempre queste): `Posto letto`, `Stanza singola`, `Stanza doppia`, `Monolocale`, `Bilocale`, `Trilocale o più grande`.
+- Quartiere normalizzato: il nome del quartiere che si usa comunemente in città, sempre scritto allo stesso modo (es. a Roma: una via vicino a Furio Camillo → "Appio Latino", Piazza Bologna → "Nomentano"). Prima di scriverne uno nuovo, controllare i nomi già usati nelle voci esistenti e riusarli.
+- Prezzo: usare `prezzo_rilevato` dello script solo come indizio; leggere il testo. Se ci sono più stanze con prezzi diversi, una voce per prezzo. Senza prezzo, nessuna voce.
+- Si aggiunge la voce al documento del mese corrente (`update` con `if_version`; se il documento non esiste, `set`). Si tengono gli ultimi 3 mesi.
+
+**Confronto sugli annunci.** Per ogni annuncio salvato in `annunci` calcolare la mediana dei prezzi della stessa tipologia nello stesso quartiere negli ultimi 60 giorni:
+- con almeno 4 voci: `mediana_zona` (numero) e `confronto_prezzo` (testo breve), es. "12% sotto la mediana del quartiere (620 €, 9 annunci)" oppure "In linea con la zona";
+- con 1–3 voci: stesso confronto con "valore indicativo";
+- senza voci: confrontare con la mediana cittadina della tipologia, dicendolo;
+- un prezzo sotto il **65% della mediana** (con almeno 5 voci) è un segnale di truffa: categoria `sospetto`, con il motivo nelle note;
+- un prezzo sopra la mediana ma vicino al budget va scritto nelle note come possibile margine di trattativa.
+
+La tabella mostra questi dati nella scheda **Prezzi** (mediana, minimo e massimo per quartiere e tipologia) e sotto ogni annuncio.
+
+## 6c. Annunci ripubblicati
+
+Lo stesso annuncio ripubblicato da un account diverso o con un prezzo diverso è un segnale tipico di truffa (foto rubate a un annuncio vero). Per ogni offerta nuova, confrontarla con le voci di `prezzi` degli ultimi 60 giorni:
+
+- **stesso testo**: stessa `kt`;
+- **stesse foto**: almeno una impronta di `fh` che differisce da una delle sue `foto_h` per **al massimo 6 bit** (distanza di Hamming tra i due numeri esadecimali a 16 cifre).
+
+Se c'è una corrispondenza:
+- **autore diverso** → categoria `sospetto`, campo `ripubblicato` con il confronto, es. "Stesse foto di un annuncio di Mario R. del 24/10 a 650 € in un altro quartiere";
+- **stesso autore, prezzo diverso** (oltre il 5%) → resta nella sua categoria, campo `ripubblicato` con "Ripubblicato dallo stesso autore: prima 650 €, ora 600 €" (utile per trattare);
+- **stesso autore, stesso prezzo** → è lo stesso annuncio in un altro gruppo: aggiungere il link ad `altri_link`, nessun avviso.
+
+Le offerte senza foto e con testo troppo corto (`kt` vuota) non si possono confrontare: non segnalarle.
 
 ## 7. Esecuzione automatica con notifica
 

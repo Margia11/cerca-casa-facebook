@@ -122,6 +122,26 @@ select {
 }
 .empty strong { color: var(--fg); font-family: var(--font-display); font-size: 1.25rem; letter-spacing: .02em; }
 .notice { font-size: .85rem; color: var(--muted); }
+
+.flag { font-size: .85rem; border-radius: 6px; padding: 6px 10px; display: flex; gap: 8px; align-items: baseline; }
+.flag b { font-weight: 600; }
+.flag.warn { background: var(--bad-soft); color: var(--bad); }
+.flag.price { background: var(--bg); color: var(--muted); border: 1px solid var(--line); }
+.flag.price.low { color: var(--ok); }
+.flag.price.high { color: var(--warn); }
+.prices { display: flex; flex-direction: column; gap: 18px; }
+.prices h2 { font: 700 1.15rem var(--font-display); letter-spacing: .03em; text-transform: uppercase; margin: 0 0 6px; }
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { font-weight: 600; color: var(--muted); font-size: .8rem; letter-spacing: .04em; text-transform: uppercase; }
+tr:last-child td { border-bottom: 0; }
+td.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; }
+th.num { text-align: right; }
+.bar { position: relative; height: 6px; background: var(--bg); border-radius: 3px; min-width: 80px; }
+.bar span { position: absolute; top: 0; height: 6px; border-radius: 3px; background: var(--accent-soft); }
+.bar i { position: absolute; top: -2px; width: 2px; height: 10px; background: var(--accent); }
+.hint { color: var(--muted); font-size: .88rem; }
 @media (prefers-reduced-motion: no-preference) { .card { transition: opacity .2s; } }
 </style>
 
@@ -138,6 +158,7 @@ select {
     <button class="tab" role="tab" id="tab-quasi" data-tab="quasi" aria-selected="false">Quasi</button>
     <button class="tab" role="tab" id="tab-sospetto" data-tab="sospetto" aria-selected="false">Sospetti</button>
     <button class="tab" role="tab" id="tab-archivio" data-tab="archivio" aria-selected="false">Archivio</button>
+    <button class="tab" role="tab" id="tab-prezzi" data-tab="prezzi" aria-selected="false">Prezzi</button>
   </div>
 
   <div class="list" id="list">
@@ -163,6 +184,8 @@ const ARCHIVIO = new Set(["scartato", "affittato"]);
 let tab = "shortlist";
 let rows = [];
 let meta = {};
+let voci = [];
+const GIORNI_PREZZI = 60;
 let canWrite = true;
 
 try { const t = localStorage.getItem("tab"); if (t) tab = t; } catch (e) {}
@@ -184,6 +207,41 @@ function metroPills(m) {
   }).join("");
 }
 
+function median(a) {
+  const s = [...a].sort((x, y) => x - y);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : Math.round((s[m - 1] + s[m]) / 2);
+}
+function renderPrezzi() {
+  const limite = new Date(Date.now() - GIORNI_PREZZI * 864e5).toISOString().slice(0, 10);
+  const recenti = voci.filter((v) => v && typeof v.p === "number" && v.t && (v.d || "") >= limite);
+  if (!recenti.length) {
+    $("#list").innerHTML = `<div class="empty"><strong>Ancora nessun prezzo</strong><span>A ogni ricerca vengono registrati i prezzi di tutte le offerte lette, anche quelle fuori dai tuoi criteri. Dopo qualche giorno qui trovi il prezzo tipico per zona e tipologia.</span></div>`;
+    return;
+  }
+  const perTipo = {};
+  for (const v of recenti) {
+    const t = v.t, z = v.q || v.z || "Altro";
+    ((perTipo[t] ||= {})[z] ||= []).push(v.p);
+  }
+  const tipi = Object.keys(perTipo).sort((a, b) =>
+    Object.values(perTipo[b]).flat().length - Object.values(perTipo[a]).flat().length);
+  const blocks = tipi.map((t) => {
+    const zone = Object.entries(perTipo[t]).map(([z, ps]) => ({ z, n: ps.length, med: median(ps), min: Math.min(...ps), max: Math.max(...ps) }));
+    const tutti = Object.values(perTipo[t]).flat();
+    const gmin = Math.min(...tutti), gmax = Math.max(...tutti), span = Math.max(1, gmax - gmin);
+    zone.sort((a, b) => b.n - a.n || a.z.localeCompare(b.z));
+    const righe = zone.map((r) => {
+      const l = ((r.min - gmin) / span) * 100, w = Math.max(2, ((r.max - r.min) / span) * 100), m = ((r.med - gmin) / span) * 100;
+      return `<tr><td>${esc(r.z)}</td><td class="num">${r.n}</td><td class="num">${r.med} €</td><td class="num">${r.min}–${r.max} €</td>
+        <td><div class="bar" aria-hidden="true"><span style="left:${l}%;width:${w}%"></span><i style="left:calc(${m}% - 1px)"></i></div></td></tr>`;
+    }).join("");
+    return `<section><h2>${esc(t)} · mediana ${median(tutti)} €</h2>
+      <div class="tablewrap"><table><thead><tr><th>Zona</th><th class="num">Annunci</th><th class="num">Mediana</th><th class="num">Da–a</th><th>Distribuzione</th></tr></thead><tbody>${righe}</tbody></table></div></section>`;
+  }).join("");
+  $("#list").innerHTML = `<div class="prices"><p class="hint">Prezzi mensili delle offerte lette negli ultimi ${GIORNI_PREZZI} giorni (${recenti.length} annunci), anche fuori dai tuoi criteri. Con meno di 4 annunci in una zona il valore è solo indicativo.</p>${blocks}</div>`;
+}
+
 function inTab(r) {
   const st = r.stato || "nuovo";
   if (tab === "archivio") return ARCHIVIO.has(st);
@@ -195,6 +253,7 @@ function render() {
   document.querySelectorAll(".tab").forEach((b) => {
     const t = b.dataset.tab;
     b.setAttribute("aria-selected", String(t === tab));
+    if (t === "prezzi") return;
     const n = rows.filter((r) => {
       const st = r.stato || "nuovo";
       if (t === "archivio") return ARCHIVIO.has(st);
@@ -218,6 +277,8 @@ function render() {
   if (meta.post_letti != null) sub.push(`${meta.post_letti} post letti`);
   $("#sub").innerHTML = sub.length ? sub.join(" · ") : esc(meta.criteri || "Gli annunci trovati nei gruppi Facebook compaiono qui dopo ogni ricerca.");
   if (meta.titolo) { $("#titolo").textContent = meta.titolo; document.title = meta.titolo; }
+
+  if (tab === "prezzi") { renderPrezzi(); return; }
 
   const list = rows.filter(inTab).sort((a, b) => {
     const na = (a.stato || "nuovo") === "nuovo", nb = (b.stato || "nuovo") === "nuovo";
@@ -254,6 +315,8 @@ function render() {
         ${r.tipologia ? `<span class="tag">${esc(r.tipologia)}</span>` : ""}
       </div>
       ${r.dettagli ? `<div class="details">${esc(r.dettagli)}</div>` : ""}
+      ${r.ripubblicato ? `<div class="flag warn"><b>Ripubblicato</b><span>${esc(r.ripubblicato)}</span></div>` : ""}
+      ${r.confronto_prezzo ? `<div class="flag price${r.prezzo && r.mediana_zona ? (r.prezzo < r.mediana_zona * 0.95 ? " low" : r.prezzo > r.mediana_zona * 1.05 ? " high" : "") : ""}"><b>Prezzo</b><span>${esc(r.confronto_prezzo)}</span></div>` : ""}
       ${r.note ? `<div class="note">${esc(r.note)}</div>` : ""}
       <div class="foot">
         <span>${linkHtml}</span>
@@ -311,6 +374,10 @@ document.getElementById("list").addEventListener("change", async (e) => {
   }, () => {
     $("#notice").textContent = "La lista non si aggiorna più in tempo reale: ricarica la pagina.";
   });
+  db.collection("prezzi").onSnapshot((snap) => {
+    voci = snap.docs.flatMap((d) => (Array.isArray(d.data().voci) ? d.data().voci : []));
+    if (tab === "prezzi") render();
+  }, () => {});
   db.doc("memoria/stato").onSnapshot((d) => {
     meta = d.exists ? d.data() : {};
     render();
