@@ -21,7 +21,7 @@ Città: Roma
 
 - Spese escluse: tollero fino a 50 € oltre il budget, se le spese sono a parte.
 - Data di ingresso: appena possibile
-- Durata minima: preferibilmente lungo periodo; segnalare i transitori
+- Durata minima del contratto: almeno 12 mesi (scartare disponibilità più brevi; se la durata non è indicata, chiederla)
 - Contratto: preferito
 
 ## Zone

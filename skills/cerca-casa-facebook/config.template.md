@@ -29,7 +29,7 @@ Città: <!-- es. Roma, Milano, Bologna, Torino -->
 
 - Spese escluse: tollero fino a <!-- 50 --> € oltre il budget, se le spese sono a parte.
 - Data di ingresso: <!-- es. da dicembre 2026, oppure "subito" -->
-- Durata minima: <!-- es. almeno 12 mesi; scarta transitori brevi / va bene anche transitorio -->
+- Durata minima del contratto: <!-- es. almeno 12 mesi: gli annunci più brevi vengono scartati, quelli senza durata tenuti con una domanda -->
 - Contratto: <!-- obbligatorio registrato / preferito / indifferente -->
 
 ## Zone
