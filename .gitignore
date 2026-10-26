@@ -1,0 +1,6 @@
+# Criteri personali: non pubblicarli
+config.md
+skills/cerca-casa-facebook/config.md
+
+.DS_Store
+*.zip
