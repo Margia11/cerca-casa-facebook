@@ -79,8 +79,9 @@ Se un'offerta ha un'impronta già presente tra gli annunci salvati, non ricrearl
 ## 5. Foto dei candidati
 
 Molti annunci hanno prezzo, letto o planimetria solo nelle immagini. Per ogni annuncio `shortlist` o `quasi` a cui manca un dato decisivo:
-- aprire il post (il `link`; se manca, cliccare la data del post nel feed);
-- aprire la prima foto e fare uno screenshot (scala ridotta), poi passare alle successive con la freccia destra, **al massimo 5 foto**; chiudere con Esc;
+- aprire il post (il `link`; se manca, cliccare la data del post nel feed): le prime foto compaiono già nel riquadro del post, quindi basta uno screenshot e uno zoom sulle immagini;
+- se le foto sono di più (riquadro "+N"), cliccare la prima **dentro il riquadro del post** e passare alle successive con la freccia destra, **al massimo 5 foto**; chiudere con Esc. Non usare i link a foto trovati altrove nella pagina: spesso sono di altri post o pubblicità;
+- se il post dice "foto in privato", non ci sono foto da leggere: annotare la domanda da fare all'inserzionista;
 - cercare prezzo, planimetria, testo sovrapposto, tipo di letto, aria condizionata e ciò che i criteri richiedono;
 - aggiornare `dettagli`/`note`, ricalcolare la categoria, impostare `foto_lette: true`; se una foto rivela che l'annuncio non è compatibile, scartarlo.
 
