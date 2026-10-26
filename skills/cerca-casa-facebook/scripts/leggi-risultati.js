@@ -12,12 +12,13 @@
 //   prezzo_rilevato  primo importo plausibile in euro trovato nel testo (da verificare):
 //                    canone mensile in affitto, prezzo totale in vendita
 //   mq_rilevati      superficie in metri quadri, se scritta nel testo
-//
-// Per gli annunci di vendita impostare window.__modo = 'acquisto' nella stessa chiamata.
 //   kt               impronta del solo testo, senza autore, date e numeri: uguale se lo stesso
 //                    annuncio viene ripubblicato da un altro account o con un altro prezzo
 //   foto_h           impronte visive (dHash a 64 bit, in esadecimale) delle prime 3 foto:
 //                    due foto sono la stessa se differiscono per al massimo 6 bit
+//
+// Per gli annunci di vendita impostare window.__modo = 'acquisto' nella stessa chiamata
+// (cambia l'intervallo dei prezzi plausibili).
 
 {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
