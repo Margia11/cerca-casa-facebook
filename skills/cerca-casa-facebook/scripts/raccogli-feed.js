@@ -6,14 +6,22 @@
 // Il feed di Facebook è "virtualizzato" (tiene in pagina pochi post alla volta), quindi i post
 // vengono salvati man mano in window.__cc. I risultati si leggono con leggi-risultati.js.
 //
-// Parametro: SCORRIMENTI (default 16, circa 35-40 secondi, ~20-45 post nei gruppi attivi).
+// MEMORIA: prima di eseguirlo si può impostare nella pagina l'elenco delle impronte già viste:
+//   window.__visti = ["k1a2b3c", ...];
+// Ogni post riceve un'impronta (k) calcolata dal testo, uguale anche se lo stesso annuncio è
+// pubblicato in gruppi diversi. Quando lo scorrimento incontra STOP_DOPO_VISTI post già visti,
+// si ferma prima: significa che da lì in giù il feed era già stato letto.
+//
+// Parametri: SCORRIMENTI (massimo, default 16 ≈ 35-40 s) e STOP_DOPO_VISTI (default 8).
 
 const SCORRIMENTI = 16;
+const STOP_DOPO_VISTI = 8;
 
-window.__cc = { seen: {}, done: false, steps: 0, startedAt: Date.now() };
+window.__cc = { seen: {}, done: false, steps: 0, giaVisti: 0, fermatoPrima: false, startedAt: Date.now() };
 
 (async () => {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const visti = new Set(Array.isArray(window.__visti) ? window.__visti : []);
   // Pulsanti "Altro…" per espandere i post troncati (Facebook in più lingue)
   const MORE = /^(Altro|Mostra altro|See more|Ver más|Voir plus|Mehr anzeigen|Ver mais)/;
   const clean = (t) =>
@@ -28,27 +36,51 @@ window.__cc = { seen: {}, done: false, steps: 0, startedAt: Date.now() };
       .replace(/\n\s*\n/g, '\n')
       .trim();
 
+  // Impronta del post: autore + inizio del testo, senza data relativa ("2 ore fa") né punteggiatura
+  const TEMPO = /^(·|Segui|Follow|Contenuti IA|Amministratore|\d+\s*(min|h|g)|.*\b(fa|ago)\b|ieri|yesterday|.*\d{1,2}:\d{2})$/i;
+  const fingerprint = (t) => {
+    const lines = t.split('\n').map((l) => l.trim()).filter((l) => l && !TEMPO.test(l));
+    const s = lines.join(' ').toLowerCase().replace(/[^a-z0-9àèéìòù]+/g, '').slice(0, 160);
+    let h = 5381;
+    for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+    return 'k' + (h >>> 0).toString(36);
+  };
+  // Facebook mostra il vero link del post solo al passaggio del mouse sulla data: lo simuliamo
+  const revealLinks = (d) =>
+    d.querySelectorAll('a[role="link"][href="#"], a[role="link"]:not([href])').forEach((a) => {
+      a.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+      a.dispatchEvent(new FocusEvent('focus'));
+    });
+
   const grab = async () => {
     document.querySelectorAll('div[role="button"]').forEach((b) => {
       if (MORE.test(b.innerText.trim())) b.click();
     });
-    await sleep(700);
     const feed = document.querySelector('div[role="feed"]');
+    if (feed) for (const d of feed.children) revealLinks(d);
+    await sleep(700);
     if (!feed) return;
     for (const d of feed.children) {
       const t = clean(d.innerText || '');
       if (t.length < 60) continue;
-      const key = t.slice(0, 100);
+      const k = fingerprint(t);
       const links = [...d.querySelectorAll('a[href*="/posts/"],a[href*="/permalink/"]')].map(
         (a) => a.href.split('?')[0]
       );
-      const prev = window.__cc.seen[key];
-      if (!prev || (!prev.l && links[0])) window.__cc.seen[key] = { l: links[0] || '', t: t.slice(0, 1200) };
+      const prev = window.__cc.seen[k];
+      if (!prev) {
+        window.__cc.seen[k] = { k, l: links[0] || '', t: t.slice(0, 1200), visto: visti.has(k) };
+        if (visti.has(k)) window.__cc.giaVisti++;
+      } else if (!prev.l && links[0]) prev.l = links[0];
     }
   };
 
   for (let i = 0; i < SCORRIMENTI; i++) {
     await grab();
+    if (visti.size && window.__cc.giaVisti >= STOP_DOPO_VISTI) {
+      window.__cc.fermatoPrima = true;
+      break;
+    }
     window.scrollBy(0, 1800);
     window.__cc.steps = i + 1;
     await sleep(2000);

@@ -1,0 +1,319 @@
+<title>Cerca casa</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: lista di schede annuncio in una colonna, barra di riepilogo e filtri in alto */
+:root {
+  --bg: #f6f5f2;
+  --surface: #ffffff;
+  --fg: #23211d;
+  --muted: #6e6a62;
+  --line: #e2dfd8;
+  --accent: #b5401f;          
+  --accent-soft: #f6e4dd;
+  --ok: #2f7a4a;  --ok-soft: #e0f0e5;
+  --warn: #9a6a00; --warn-soft: #f7ecd2;
+  --bad: #a3312b; --bad-soft: #f6dedc;
+  --info: #2b5c9a; --info-soft: #dfe8f5;
+  --metro-a: #e4572e; --metro-b: #1f62b5; --metro-c: #2a9a4a;
+  --font-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --font-body: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #171614; --surface: #211f1c; --fg: #ece8e1; --muted: #a39d93; --line: #35322d;
+    --accent: #e8714c; --accent-soft: #3a241b;
+    --ok: #6cc28c; --ok-soft: #1d3326; --warn: #e0b04a; --warn-soft: #362c14;
+    --bad: #ec7d76; --bad-soft: #3b1f1d; --info: #82aee6; --info-soft: #1c2a3d;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #171614; --surface: #211f1c; --fg: #ece8e1; --muted: #a39d93; --line: #35322d;
+  --accent: #e8714c; --accent-soft: #3a241b;
+  --ok: #6cc28c; --ok-soft: #1d3326; --warn: #e0b04a; --warn-soft: #362c14;
+  --bad: #ec7d76; --bad-soft: #3b1f1d; --info: #82aee6; --info-soft: #1c2a3d;
+  color-scheme: dark;
+}
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--font-body); font-size: 15px; line-height: 1.5;
+}
+.wrap {
+  max-width: 760px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 48px;
+  display: flex; flex-direction: column; gap: 18px;
+}
+header { display: flex; flex-direction: column; gap: 4px; }
+h1 {
+  font-family: var(--font-display); font-weight: 700; font-size: 2.2rem;
+  letter-spacing: .01em; line-height: 1.05; margin: 0; text-wrap: balance;
+}
+.sub { color: var(--muted); font-size: .92rem; }
+.sub b { color: var(--fg); font-weight: 600; }
+
+.counts { display: flex; flex-wrap: wrap; gap: 8px; }
+.count {
+  display: flex; align-items: baseline; gap: 6px;
+  padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line);
+  background: var(--surface); font-size: .88rem; color: var(--muted);
+}
+.count strong { font-family: var(--font-mono); font-size: .95rem; color: var(--fg); font-variant-numeric: tabular-nums; }
+.count.hot strong { color: var(--accent); }
+
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+.tab {
+  appearance: none; border: 0; background: none; cursor: pointer;
+  font: 600 1rem var(--font-display); letter-spacing: .04em; text-transform: uppercase;
+  color: var(--muted); padding: 8px 12px; border-bottom: 3px solid transparent; white-space: nowrap;
+}
+.tab[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--accent); }
+.tab:focus-visible, .btn:focus-visible, select:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tab .n { font-family: var(--font-mono); font-size: .8rem; margin-left: 4px; }
+
+.list { display: flex; flex-direction: column; gap: 12px; }
+.card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; min-width: 0;
+}
+.card.is-new { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.card.dim { opacity: .62; }
+.top { display: flex; gap: 10px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
+.title { font-weight: 600; font-size: 1.05rem; line-height: 1.3; min-width: 0; flex: 1 1 260px; }
+.price { font-family: var(--font-mono); font-size: 1rem; white-space: nowrap; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.tag {
+  font-size: .78rem; font-weight: 600; letter-spacing: .03em;
+  padding: 2px 8px; border-radius: 4px; background: var(--bg); color: var(--muted); border: 1px solid var(--line);
+}
+.tag.new { background: var(--accent-soft); color: var(--accent); border-color: transparent; text-transform: uppercase; }
+.metro {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 4px; color: #fff;
+  font: 700 .8rem var(--font-display);
+}
+.metro.a { background: var(--metro-a); } .metro.b { background: var(--metro-b); } .metro.c { background: var(--metro-c); }
+.zone { display: inline-flex; gap: 6px; align-items: center; font-size: .9rem; }
+.details { color: var(--fg); font-size: .92rem; }
+.note { color: var(--muted); font-size: .9rem; border-left: 2px solid var(--line); padding-left: 10px; }
+.foot { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; font-size: .85rem; color: var(--muted); }
+.foot a { color: var(--accent); font-weight: 600; text-decoration: none; }
+.foot a:hover { text-decoration: underline; }
+.score { font-family: var(--font-mono); }
+.state { display: flex; align-items: center; gap: 6px; }
+select {
+  font: 500 .88rem var(--font-body); color: var(--fg); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px;
+}
+.pill { font-size: .78rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; }
+.s-nuovo { background: var(--accent-soft); color: var(--accent); }
+.s-contattare { background: var(--info-soft); color: var(--info); }
+.s-scritto { background: var(--warn-soft); color: var(--warn); }
+.s-visita { background: var(--ok-soft); color: var(--ok); }
+.s-scartato, .s-affittato { background: var(--bad-soft); color: var(--bad); }
+
+.empty {
+  border: 1px dashed var(--line); border-radius: 10px; padding: 28px 20px; text-align: center; color: var(--muted);
+  display: flex; flex-direction: column; gap: 6px;
+}
+.empty strong { color: var(--fg); font-family: var(--font-display); font-size: 1.25rem; letter-spacing: .02em; }
+.notice { font-size: .85rem; color: var(--muted); }
+@media (prefers-reduced-motion: no-preference) { .card { transition: opacity .2s; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1 id="titolo">Cerca casa</h1>
+    <div class="sub" id="sub">Gli annunci trovati nei gruppi Facebook compaiono qui dopo ogni ricerca.</div>
+  </header>
+
+  <div class="counts" id="counts" aria-live="polite"></div>
+
+  <div class="tabs" role="tablist" id="tabs">
+    <button class="tab" role="tab" id="tab-shortlist" data-tab="shortlist" aria-selected="true">Da valutare</button>
+    <button class="tab" role="tab" id="tab-quasi" data-tab="quasi" aria-selected="false">Quasi</button>
+    <button class="tab" role="tab" id="tab-sospetto" data-tab="sospetto" aria-selected="false">Sospetti</button>
+    <button class="tab" role="tab" id="tab-archivio" data-tab="archivio" aria-selected="false">Archivio</button>
+  </div>
+
+  <div class="list" id="list">
+    <div class="empty">
+      <strong>Caricamento degli annunci…</strong>
+      <span>Qui compaiono gli annunci trovati da ogni ricerca nei gruppi Facebook.</span>
+    </div>
+  </div>
+
+  <div class="notice" id="notice"></div>
+</div>
+
+<script>
+const STATI = [
+  ["nuovo", "Nuovo"],
+  ["contattare", "Da contattare"],
+  ["scritto", "Scritto"],
+  ["visita", "Visita fissata"],
+  ["scartato", "Scartato"],
+  ["affittato", "Già affittato"],
+];
+const ARCHIVIO = new Set(["scartato", "affittato"]);
+let tab = "shortlist";
+let rows = [];
+let meta = {};
+let canWrite = true;
+
+try { const t = localStorage.getItem("tab"); if (t) tab = t; } catch (e) {}
+
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+function fmtDate(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d)) return esc(iso);
+  return d.toLocaleString("it-IT", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+}
+function metroPills(m) {
+  if (!m) return "";
+  return String(m).split(/[,\s]+/).filter(Boolean).map((l) => {
+    const k = l.toLowerCase();
+    return ["a", "b", "c"].includes(k) ? `<span class="metro ${k}" title="Metro ${k.toUpperCase()}">${k.toUpperCase()}</span>` : "";
+  }).join("");
+}
+
+function inTab(r) {
+  const st = r.stato || "nuovo";
+  if (tab === "archivio") return ARCHIVIO.has(st);
+  if (ARCHIVIO.has(st)) return false;
+  return (r.categoria || "shortlist") === tab;
+}
+
+function render() {
+  document.querySelectorAll(".tab").forEach((b) => {
+    const t = b.dataset.tab;
+    b.setAttribute("aria-selected", String(t === tab));
+    const n = rows.filter((r) => {
+      const st = r.stato || "nuovo";
+      if (t === "archivio") return ARCHIVIO.has(st);
+      return !ARCHIVIO.has(st) && (r.categoria || "shortlist") === t;
+    }).length;
+    b.innerHTML = b.textContent.replace(/\s*\d+$/, "") + ` <span class="n">${n}</span>`;
+  });
+
+  const active = rows.filter((r) => !ARCHIVIO.has(r.stato || "nuovo") && (r.categoria || "shortlist") === "shortlist");
+  const c = (st) => active.filter((r) => (r.stato || "nuovo") === st).length;
+  $("#counts").innerHTML = [
+    ["Nuovi", c("nuovo"), true],
+    ["Da contattare", c("contattare")],
+    ["Scritto", c("scritto")],
+    ["Visite", c("visita")],
+  ].map(([l, n, hot]) => `<span class="count${hot && n ? " hot" : ""}"><strong>${n}</strong>${l}</span>`).join("");
+
+  const sub = [];
+  if (meta.ultima_ricerca) sub.push(`Ultima ricerca <b>${fmtDate(meta.ultima_ricerca)}</b>`);
+  if (meta.gruppi_letti != null) sub.push(`${meta.gruppi_letti} gruppi`);
+  if (meta.post_letti != null) sub.push(`${meta.post_letti} post letti`);
+  $("#sub").innerHTML = sub.length ? sub.join(" · ") : esc(meta.criteri || "Gli annunci trovati nei gruppi Facebook compaiono qui dopo ogni ricerca.");
+  if (meta.titolo) { $("#titolo").textContent = meta.titolo; document.title = meta.titolo; }
+
+  const list = rows.filter(inTab).sort((a, b) => {
+    const na = (a.stato || "nuovo") === "nuovo", nb = (b.stato || "nuovo") === "nuovo";
+    if (na !== nb) return na ? -1 : 1;
+    return (b.punteggio ?? 0) - (a.punteggio ?? 0) || String(b.trovato_il || "").localeCompare(String(a.trovato_il || ""));
+  });
+
+  if (!list.length) {
+    const msg = {
+      shortlist: ["Nessun annuncio da valutare", "Quando una ricerca trova un annuncio compatibile, compare qui con lo stato Nuovo."],
+      quasi: ["Nessun annuncio quasi giusto", "Qui finiscono gli annunci a cui manca un solo criterio, per esempio 30 € sopra budget."],
+      sospetto: ["Nessun annuncio sospetto", "Gli annunci con segnali di truffa vengono messi qui, con il motivo."],
+      archivio: ["Archivio vuoto", "Gli annunci che segni come Scartato o Già affittato si spostano qui e non vengono più riproposti."],
+    }[tab];
+    $("#list").innerHTML = `<div class="empty"><strong>${msg[0]}</strong><span>${msg[1]}</span></div>`;
+    return;
+  }
+
+  $("#list").innerHTML = list.map((r) => {
+    const st = r.stato || "nuovo";
+    const opts = STATI.map(([v, l]) => `<option value="${v}"${v === st ? " selected" : ""}>${l}</option>`).join("");
+    const links = (r.link ? [r.link] : []).concat(r.altri_link || []);
+    const linkHtml = links.length
+      ? links.map((u, i) => `<a href="${esc(u)}" target="_blank" rel="noopener">${i ? "Altro gruppo" : "Apri il post"}</a>`).join(" · ")
+      : `<span>${esc([r.gruppo, r.autore].filter(Boolean).join(" · "))}</span>`;
+    return `<article class="card${st === "nuovo" && r.categoria !== "sospetto" ? " is-new" : ""}${ARCHIVIO.has(st) ? " dim" : ""}" data-id="${esc(r._id)}">
+      <div class="top">
+        <div class="title">${esc(r.titolo || r.tipologia || "Annuncio")}</div>
+        <div class="price">${esc(r.prezzo_testo || (r.prezzo ? r.prezzo + " €" : "prezzo ?"))}</div>
+      </div>
+      <div class="tags">
+        ${st === "nuovo" ? '<span class="tag new">Nuovo</span>' : ""}
+        <span class="zone">${metroPills(r.metro)}<span>${esc(r.zona || "zona da verificare")}</span></span>
+        ${r.tipologia ? `<span class="tag">${esc(r.tipologia)}</span>` : ""}
+      </div>
+      ${r.dettagli ? `<div class="details">${esc(r.dettagli)}</div>` : ""}
+      ${r.note ? `<div class="note">${esc(r.note)}</div>` : ""}
+      <div class="foot">
+        <span>${linkHtml}</span>
+        <span>Trovato ${fmtDate(r.trovato_il)}${r.punteggio != null ? ` · <span class="score">${r.punteggio} pt</span>` : ""}</span>
+      </div>
+      <div class="foot">
+        <label class="state" for="s-${esc(r._id)}">Stato
+          <select id="s-${esc(r._id)}" data-id="${esc(r._id)}"${canWrite ? "" : " disabled"}>${opts}</select>
+        </label>
+        <span class="pill s-${st}">${STATI.find((s) => s[0] === st)?.[1] || st}</span>
+      </div>
+    </article>`;
+  }).join("");
+}
+
+document.getElementById("tabs").addEventListener("click", (e) => {
+  const b = e.target.closest(".tab");
+  if (!b) return;
+  tab = b.dataset.tab;
+  try { localStorage.setItem("tab", tab); } catch (err) {}
+  render();
+});
+
+let db = null;
+document.getElementById("list").addEventListener("change", async (e) => {
+  const sel = e.target.closest("select[data-id]");
+  if (!sel || !db) return;
+  const id = sel.dataset.id;
+  sel.disabled = true;
+  try {
+    await db.collection("annunci").doc(id).update({ stato: sel.value, aggiornato_il: new Date().toISOString() });
+  } catch (err) {
+    if (err && err.code === "invalid_argument") { canWrite = false; }
+    $("#notice").textContent = "Non sono riuscito a salvare lo stato. Riprova tra poco.";
+  } finally {
+    sel.disabled = !canWrite;
+  }
+});
+
+(async () => {
+  db = await window.claude?.use?.("db");
+  if (!db) {
+    $("#list").innerHTML = `<div class="empty"><strong>Annunci non disponibili qui</strong><span>Apri la pagina dall'app di Claude con il tuo account per vedere e aggiornare gli annunci.</span></div>`;
+    return;
+  }
+  try {
+    const user = await window.claude.use("user");
+    const w = user ? await user.can("data.write") : null;
+    if (w === false) canWrite = false;
+  } catch (e) {}
+
+  db.collection("annunci").onSnapshot((snap) => {
+    rows = snap.docs.map((d) => ({ _id: d.id, ...d.data() }));
+    render();
+  }, () => {
+    $("#notice").textContent = "La lista non si aggiorna più in tempo reale: ricarica la pagina.";
+  });
+  db.doc("memoria/stato").onSnapshot((d) => {
+    meta = d.exists ? d.data() : {};
+    render();
+  }, () => {});
+})();
+</script>

@@ -58,6 +58,12 @@ Città: Roma
 - Affitti Brevi & Richieste di Booking a Roma (solo affitti brevi)
 - Affitto Stanze Studenti Roma, SAPIENZA AFFITTI (quasi solo annunci per studenti)
 
+## Tabella
+Tabella: (indirizzo della tabella online creata al primo avvio)
+
+## Esecuzione automatica
+Orari: 8:42, 13:42, 19:42
+
 ## Permessi
 - Posso iscrivermi da solo a nuovi gruppi pubblici di affitti nella mia città: sì
 - Gruppi con domande d'ingresso: chiedimi sempre prima di rispondere.

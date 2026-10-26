@@ -9,8 +9,11 @@ Nei gruppi di affitti la maggior parte dei post sono di persone che *cercano* ca
 1. **Configurazione guidata**: al primo avvio Claude ti chiede città, budget, tipologia, zone e qualche informazione su di te (lavoratore o studente, animali, ecc.) e salva tutto in `config.md`.
 2. **Ricerca dei gruppi**: trova i gruppi a cui sei già iscritto e cerca quelli più attivi nella tua città e nei tuoi quartieri. Se gli dai il permesso, si iscrive ai gruppi pubblici. Non risponde mai alle domande d'ingresso senza chiederti cosa scrivere.
 3. **Lettura**: apre ogni gruppo nel **tuo** browser, dove hai già fatto il login, e scorre il feed in ordine cronologico.
-4. **Filtro**: scarta chi cerca casa, gli annunci incompatibili e quelli fuori zona o fuori budget, e mette da parte quelli sospetti di truffa.
-5. **Risultato**: shortlist ordinata per punteggio, gli annunci "quasi" giusti e quelli sospetti.
+4. **Memoria**: ogni post riceve un'impronta. I post già letti non vengono riproposti, la lettura si ferma da sola quando arriva a post già visti e lo stesso annuncio pubblicato in più gruppi viene riconosciuto come uno solo.
+5. **Filtro**: scarta chi cerca casa, gli annunci incompatibili e quelli fuori zona o fuori budget, e mette da parte quelli sospetti di truffa.
+6. **Foto**: per i candidati a cui manca un dato (prezzo, letto, numero di camere), guarda fino a 5 foto dell'annuncio, dove spesso ci sono planimetria e prezzo.
+7. **Tabella degli annunci**: salva tutto in una pagina online privata (`assets/tabella-annunci.html`) dove segni lo stato di ogni annuncio: *nuovo*, *da contattare*, *scritto*, *visita fissata*, *scartato*, *già affittato*. Gli annunci scartati non tornano più. Se la pagina online non è disponibile, usa dei file locali.
+8. **In automatico**: se la tua versione di Claude supporta le attività pianificate, gira 2-3 volte al giorno e ti manda una notifica solo quando esce un annuncio nuovo compatibile.
 
 Esempio di risultato:
 
@@ -49,7 +52,7 @@ Scrivi a Claude, ad esempio:
 
 Se vuoi configurarla a mano, copia `config.template.md` come `config.md` nella stessa cartella e compilalo. In `examples/roma.md` trovi un esempio completo.
 
-**Consiglio:** ogni passaggio copre circa le ultime 4-8 ore dei gruppi più attivi, quindi conviene eseguirla 2-3 volte al giorno. Se la tua versione di Claude supporta le attività pianificate, chiedigli di farla partire in automatico.
+**Consiglio:** ogni passaggio copre circa le ultime 4-8 ore dei gruppi più attivi, quindi conviene eseguirla 2-3 volte al giorno. Grazie alla memoria, ogni esecuzione legge solo i post nuovi. Se la tua versione di Claude supporta le attività pianificate, chiedigli di farla partire in automatico, per esempio "esegui cerca-casa-facebook ogni giorno alle 9, alle 14 e alle 20".
 
 ## Struttura
 
@@ -58,9 +61,11 @@ skills/cerca-casa-facebook/
 ├── SKILL.md               # istruzioni per Claude
 ├── config.template.md     # modello dei criteri personali
 ├── examples/roma.md       # esempio compilato
+├── assets/
+│   └── tabella-annunci.html  # tabella online degli annunci, con stato
 └── scripts/
-    ├── raccogli-feed.js   # scorre il feed del gruppo e raccoglie i post
-    └── leggi-risultati.js # restituisce le offerte, già senza i post di chi cerca
+    ├── raccogli-feed.js   # scorre il feed, calcola le impronte, si ferma sui post già visti
+    └── leggi-risultati.js # restituisce solo le offerte nuove, senza i post di chi cerca
 ```
 
 Il tuo `config.md` è nel `.gitignore`, così non lo pubblichi per sbaglio.

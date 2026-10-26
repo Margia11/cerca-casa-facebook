@@ -58,6 +58,14 @@ L'ID è la parte dopo /groups/ nell'indirizzo del gruppo.
 ## Gruppi da non usare
 -
 
+## Tabella
+<!-- Compilato dalla skill: indirizzo della tabella online degli annunci, oppure "file locali". -->
+Tabella:
+
+## Esecuzione automatica
+<!-- es. 9:00, 14:00, 20:00 — oppure "no" -->
+Orari:
+
 ## Permessi
 - Posso iscrivermi da solo a nuovi gruppi pubblici di affitti nella mia città: <!-- sì / no -->
 - Gruppi con domande d'ingresso: chiedimi sempre prima di rispondere.
