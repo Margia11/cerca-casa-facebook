@@ -2,6 +2,9 @@
 
 <!-- Esempio compilato. Per usarlo, copialo come `config.md` e modificalo. -->
 
+## Modalità
+Modalità: affitto
+
 ## Città
 Città: Roma
 
@@ -16,11 +19,12 @@ Città: Roma
 
 ## Cosa cerco
 
-| Tipologia | Prezzo massimo (€/mese) | Requisiti obbligatori |
+| Tipologia | Prezzo massimo (€) | Requisiti obbligatori |
 |---|---|---|
 | Stanza singola | 600 | letto matrimoniale (una piazza e mezza: segnalare come dubbio); appartamento con massimo 2 camere da letto |
 | Monolocale (o bilocale piccolo) | 750 | — |
 
+- Bagni: stanza con bagno privato preferito; condiviso al massimo con 1 persona
 - Spese escluse: tollero fino a 50 € oltre il budget, se le spese sono a parte.
 - Data di ingresso: gennaio 2027
 - Durata minima del contratto: almeno 12 mesi (scartare disponibilità più brevi; se la durata non è indicata, chiederla)

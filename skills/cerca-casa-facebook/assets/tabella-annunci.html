@@ -85,6 +85,7 @@ h1 {
 .top { display: flex; gap: 10px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
 .title { font-weight: 600; font-size: 1.05rem; line-height: 1.3; min-width: 0; flex: 1 1 260px; }
 .price { font-family: var(--font-mono); font-size: 1rem; white-space: nowrap; }
+.price small { display: block; font-size: .75rem; color: var(--muted); text-align: right; }
 .tags { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .tag {
   font-size: .78rem; font-weight: 600; letter-spacing: .03em;
@@ -114,7 +115,8 @@ select {
 .s-contattare { background: var(--info-soft); color: var(--info); }
 .s-scritto { background: var(--warn-soft); color: var(--warn); }
 .s-visita { background: var(--ok-soft); color: var(--ok); }
-.s-scartato, .s-affittato { background: var(--bad-soft); color: var(--bad); }
+.s-offerta { background: var(--accent-soft); color: var(--accent); }
+.s-scartato, .s-affittato, .s-venduto { background: var(--bad-soft); color: var(--bad); }
 
 .empty {
   border: 1px dashed var(--line); border-radius: 10px; padding: 28px 20px; text-align: center; color: var(--muted);
@@ -172,7 +174,7 @@ th.num { text-align: right; }
 </div>
 
 <script>
-const STATI = [
+const STATI_AFFITTO = [
   ["nuovo", "Nuovo"],
   ["contattare", "Da contattare"],
   ["scritto", "Scritto"],
@@ -180,7 +182,18 @@ const STATI = [
   ["scartato", "Scartato"],
   ["affittato", "Già affittato"],
 ];
-const ARCHIVIO = new Set(["scartato", "affittato"]);
+const STATI_ACQUISTO = [
+  ["nuovo", "Nuovo"],
+  ["contattare", "Da contattare"],
+  ["scritto", "Scritto"],
+  ["visita", "Visita fissata"],
+  ["offerta", "Proposta fatta"],
+  ["scartato", "Scartato"],
+  ["venduto", "Già venduto"],
+];
+let STATI = STATI_AFFITTO;
+const ARCHIVIO = new Set(["scartato", "affittato", "venduto"]);
+const isAcquisto = () => meta.modo === "acquisto";
 let tab = "shortlist";
 let rows = [];
 let meta = {};
@@ -207,6 +220,7 @@ function metroPills(m) {
   }).join("");
 }
 
+const eur = (n) => Number(n).toLocaleString("it-IT");
 function median(a) {
   const s = [...a].sort((x, y) => x - y);
   const m = Math.floor(s.length / 2);
@@ -214,7 +228,9 @@ function median(a) {
 }
 function renderPrezzi() {
   const limite = new Date(Date.now() - GIORNI_PREZZI * 864e5).toISOString().slice(0, 10);
-  const recenti = voci.filter((v) => v && typeof v.p === "number" && v.t && (v.d || "") >= limite);
+  const acq = isAcquisto();
+  const val = (v) => (acq && typeof v.m === "number" && v.m > 0 ? Math.round(v.p / v.m) : acq ? null : v.p);
+  const recenti = voci.filter((v) => v && typeof v.p === "number" && v.t && (v.d || "") >= limite && (!v.c || v.c === (acq ? "vendita" : "affitto")) && val(v) != null);
   if (!recenti.length) {
     $("#list").innerHTML = `<div class="empty"><strong>Ancora nessun prezzo</strong><span>A ogni ricerca vengono registrati i prezzi di tutte le offerte lette, anche quelle fuori dai tuoi criteri. Dopo qualche giorno qui trovi il prezzo tipico per zona e tipologia.</span></div>`;
     return;
@@ -222,10 +238,11 @@ function renderPrezzi() {
   const perTipo = {};
   for (const v of recenti) {
     const t = v.t, z = v.q || v.z || "Altro";
-    ((perTipo[t] ||= {})[z] ||= []).push(v.p);
+    ((perTipo[t] ||= {})[z] ||= []).push(val(v));
   }
   const tipi = Object.keys(perTipo).sort((a, b) =>
     Object.values(perTipo[b]).flat().length - Object.values(perTipo[a]).flat().length);
+  const u = acq ? " €/m²" : " €";
   const blocks = tipi.map((t) => {
     const zone = Object.entries(perTipo[t]).map(([z, ps]) => ({ z, n: ps.length, med: median(ps), min: Math.min(...ps), max: Math.max(...ps) }));
     const tutti = Object.values(perTipo[t]).flat();
@@ -233,15 +250,21 @@ function renderPrezzi() {
     zone.sort((a, b) => b.n - a.n || a.z.localeCompare(b.z));
     const righe = zone.map((r) => {
       const l = ((r.min - gmin) / span) * 100, w = Math.max(2, ((r.max - r.min) / span) * 100), m = ((r.med - gmin) / span) * 100;
-      return `<tr><td>${esc(r.z)}</td><td class="num">${r.n}</td><td class="num">${r.med} €</td><td class="num">${r.min}–${r.max} €</td>
+      return `<tr><td>${esc(r.z)}</td><td class="num">${r.n}</td><td class="num">${eur(r.med)}${u}</td><td class="num">${eur(r.min)}–${eur(r.max)}${u}</td>
         <td><div class="bar" aria-hidden="true"><span style="left:${l}%;width:${w}%"></span><i style="left:calc(${m}% - 1px)"></i></div></td></tr>`;
     }).join("");
-    return `<section><h2>${esc(t)} · mediana ${median(tutti)} €</h2>
+    return `<section><h2>${esc(t)} · mediana ${eur(median(tutti))}${u}</h2>
       <div class="tablewrap"><table><thead><tr><th>Zona</th><th class="num">Annunci</th><th class="num">Mediana</th><th class="num">Da–a</th><th>Distribuzione</th></tr></thead><tbody>${righe}</tbody></table></div></section>`;
   }).join("");
-  $("#list").innerHTML = `<div class="prices"><p class="hint">Prezzi mensili delle offerte lette negli ultimi ${GIORNI_PREZZI} giorni (${recenti.length} annunci), anche fuori dai tuoi criteri. Con meno di 4 annunci in una zona il valore è solo indicativo.</p>${blocks}</div>`;
+  $("#list").innerHTML = `<div class="prices"><p class="hint">${acq ? "Prezzo al metro quadro delle case in vendita" : "Prezzi mensili delle offerte"} lette negli ultimi ${GIORNI_PREZZI} giorni (${recenti.length} annunci), anche fuori dai tuoi criteri. Con meno di 4 annunci in una zona il valore è solo indicativo.</p>${blocks}</div>`;
 }
 
+// in acquisto la mediana è al metro quadro quando c'è la superficie
+function cmpClass(r) {
+  if (!r.prezzo || !r.mediana_zona) return "";
+  const v = isAcquisto() && r.mq && r.mediana_zona < 50000 ? r.prezzo / r.mq : r.prezzo;
+  return v < r.mediana_zona * 0.95 ? " low" : v > r.mediana_zona * 1.05 ? " high" : "";
+}
 function inTab(r) {
   const st = r.stato || "nuovo";
   if (tab === "archivio") return ARCHIVIO.has(st);
@@ -269,6 +292,7 @@ function render() {
     ["Da contattare", c("contattare")],
     ["Scritto", c("scritto")],
     ["Visite", c("visita")],
+    ...(isAcquisto() ? [["Proposte", c("offerta")]] : []),
   ].map(([l, n, hot]) => `<span class="count${hot && n ? " hot" : ""}"><strong>${n}</strong>${l}</span>`).join("");
 
   const sub = [];
@@ -278,6 +302,7 @@ function render() {
   $("#sub").innerHTML = sub.length ? sub.join(" · ") : esc(meta.criteri || "Gli annunci trovati nei gruppi Facebook compaiono qui dopo ogni ricerca.");
   if (meta.titolo) { $("#titolo").textContent = meta.titolo; document.title = meta.titolo; }
 
+  STATI = isAcquisto() ? STATI_ACQUISTO : STATI_AFFITTO;
   if (tab === "prezzi") { renderPrezzi(); return; }
 
   const list = rows.filter(inTab).sort((a, b) => {
@@ -291,7 +316,7 @@ function render() {
       shortlist: ["Nessun annuncio da valutare", "Quando una ricerca trova un annuncio compatibile, compare qui con lo stato Nuovo."],
       quasi: ["Nessun annuncio quasi giusto", "Qui finiscono gli annunci a cui manca un solo criterio, per esempio 30 € sopra budget."],
       sospetto: ["Nessun annuncio sospetto", "Gli annunci con segnali di truffa vengono messi qui, con il motivo."],
-      archivio: ["Archivio vuoto", "Gli annunci che segni come Scartato o Già affittato si spostano qui e non vengono più riproposti."],
+      archivio: ["Archivio vuoto", `Gli annunci che segni come Scartato o ${isAcquisto() ? "Già venduto" : "Già affittato"} si spostano qui e non vengono più riproposti.`],
     }[tab];
     $("#list").innerHTML = `<div class="empty"><strong>${msg[0]}</strong><span>${msg[1]}</span></div>`;
     return;
@@ -307,19 +332,21 @@ function render() {
     return `<article class="card${st === "nuovo" && r.categoria !== "sospetto" ? " is-new" : ""}${ARCHIVIO.has(st) ? " dim" : ""}" data-id="${esc(r._id)}">
       <div class="top">
         <div class="title">${esc(r.titolo || r.tipologia || "Annuncio")}</div>
-        <div class="price">${esc(r.prezzo_testo || (r.prezzo ? r.prezzo + " €" : "prezzo ?"))}</div>
+        <div class="price">${esc(r.prezzo_testo || (r.prezzo ? eur(r.prezzo) + " €" : "prezzo ?"))}${r.prezzo && r.mq && isAcquisto() ? `<small>${eur(Math.round(r.prezzo / r.mq))} €/m²</small>` : ""}</div>
       </div>
       <div class="tags">
         ${st === "nuovo" ? '<span class="tag new">Nuovo</span>' : ""}
         <span class="zone">${metroPills(r.metro)}<span>${esc(r.zona || "zona da verificare")}</span></span>
         ${r.tipologia ? `<span class="tag">${esc(r.tipologia)}</span>` : ""}
-        ${r.disponibile_da ? `<span class="tag">Libera: ${esc(r.disponibile_da)}</span>` : ""}
+        ${r.mq ? `<span class="tag">${esc(r.mq)} m²</span>` : ""}
+        ${r.bagni ? `<span class="tag">Bagni: ${esc(r.bagni)}</span>` : ""}
+        ${r.disponibile_da ? `<span class="tag">${isAcquisto() ? "Disponibile" : "Libera"}: ${esc(r.disponibile_da)}</span>` : ""}
         ${r.durata ? `<span class="tag">Contratto: ${esc(r.durata)}</span>` : ""}
         ${r.proprietario ? `<span class="tag">Proprietario: ${esc(r.proprietario)}</span>` : ""}
       </div>
       ${r.dettagli ? `<div class="details">${esc(r.dettagli)}</div>` : ""}
       ${r.ripubblicato ? `<div class="flag warn"><b>Ripubblicato</b><span>${esc(r.ripubblicato)}</span></div>` : ""}
-      ${r.confronto_prezzo ? `<div class="flag price${r.prezzo && r.mediana_zona ? (r.prezzo < r.mediana_zona * 0.95 ? " low" : r.prezzo > r.mediana_zona * 1.05 ? " high" : "") : ""}"><b>Prezzo</b><span>${esc(r.confronto_prezzo)}</span></div>` : ""}
+      ${r.confronto_prezzo ? `<div class="flag price${cmpClass(r)}"><b>Prezzo</b><span>${esc(r.confronto_prezzo)}</span></div>` : ""}
       ${r.note ? `<div class="note">${esc(r.note)}</div>` : ""}
       <div class="foot">
         <span>${linkHtml}</span>
