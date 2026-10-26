@@ -38,6 +38,9 @@ Città: Roma
   - San Paolo (Basilica San Paolo; metro B Basilica San Paolo)
   - Nomentano (Piazza Bologna, viale XXI Aprile; metro B Bologna)
 - Zone da escludere: —
+- Punto da raggiungere: ufficio in via Nazionale 200
+- Ora di arrivo: 9:00
+- Tempo massimo con i mezzi: 35 minuti
 
 ## Preferenze (danno punti in più, non sono obbligatorie)
 - doppi servizi

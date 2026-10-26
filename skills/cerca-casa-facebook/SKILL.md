@@ -29,30 +29,30 @@ Dove le regole cambiano tra le due modalità, le sezioni lo dicono esplicitament
 
 **Dove salvare gli annunci e la memoria** (scegliere il primo disponibile e scriverlo in `config.md`, sezione "Tabella"):
 
-1. **Tabella online** (consigliata): se l'ambiente può pubblicare pagine con database (strumento `Artifact` con capacità `db`, letto e scritto con `ArtifactData`), pubblicare `assets/tabella-annunci.html` con `capabilities: {db: {}, user: {}}` e salvare il suo indirizzo in `config.md`. L'utente vede tutti gli annunci e ne cambia lo stato dal telefono o dal computer.
+1. **Tabella online** (consigliata): se l'ambiente può pubblicare pagine con database (strumento `Artifact` con capacità `db`, letto e scritto con `ArtifactData`), pubblicare `assets/tabella-annunci.html` con `capabilities: {db: {}, user: {}}` e salvare il suo indirizzo in `config.md`. L'utente vede tutti gli annunci e ne cambia lo stato dal telefono o dal computer; la scheda **Mappa** mostra gli annunci, le linee della metro, le zone scelte e il punto da raggiungere.
 2. **File locali**: `annunci.json`, `memoria.json` e `prezzi.json` nella stessa cartella di `config.md`. A fine ricerca, mostrare all'utente la shortlist in chat.
 
 Struttura dei dati (uguale in entrambi i casi):
-- **annunci**: un elemento per annuncio, con id = impronta `k…` calcolata dallo script (se manca, uno slug breve). Campi: `titolo`, `tipologia`, `prezzo` (numero, se noto: canone mensile in affitto, prezzo totale in acquisto), `prezzo_testo`, `mq` (numero, se nota la superficie), `bagni` (es. "privato", "condiviso con 2 persone", "2", "non indicato"), `zona`, `metro` (lettere delle linee separate da spazio, es. "A B"), `dettagli`, `note`, `link`, `altri_link` (lista), `gruppo`, `autore`, `categoria` (`shortlist` | `quasi` | `sospetto`), `stato`, `punteggio`, `trovato_il` (ISO), `foto_lette`, `disponibile_da` (affitto: es. "gennaio 2027", "da subito", "non indicata"; acquisto: es. "libera al rogito", "occupata da inquilino fino a giugno 2027"), `mediana_zona`, `confronto_prezzo`, `ripubblicato`. Solo in affitto: `durata` (es. "4+4", "12 mesi rinnovabili", "non indicata") e `proprietario`. Solo in acquisto: `piano`, `stato_immobile` (es. "ristrutturato", "buono", "da ristrutturare"), `classe_energetica`, `venditore` ("privato" | "agenzia").
+- **annunci**: un elemento per annuncio, con id = impronta `k…` calcolata dallo script (se manca, uno slug breve). Campi: `titolo`, `tipologia`, `prezzo` (numero, se noto: canone mensile in affitto, prezzo totale in acquisto), `prezzo_testo`, `mq` (numero, se nota la superficie), `bagni` (es. "privato", "condiviso con 2 persone", "2", "non indicato"), `zona`, `metro` (lettere delle linee separate da spazio, es. "A B"), `dettagli`, `note`, `link`, `altri_link` (lista), `gruppo`, `autore`, `categoria` (`shortlist` | `quasi` | `sospetto`), `stato`, `punteggio`, `trovato_il` (ISO), `foto_lette`, `disponibile_da` (affitto: es. "gennaio 2027", "da subito", "non indicata"; acquisto: es. "libera al rogito", "occupata da inquilino fino a giugno 2027"), `mediana_zona`, `confronto_prezzo`, `ripubblicato`, `lat` e `lon` (posizione, numeri), `posizione` ("precisa" oppure "approssimativa (<da dove viene>)"), `tempo_lavoro` (minuti con i mezzi fino al punto da raggiungere) e `tempo_lavoro_nota` (es. "metro A + bus 85, calcolato alle 8:42"); sezione 6d. Solo in affitto: `durata` (es. "4+4", "12 mesi rinnovabili", "non indicata") e `proprietario`. Solo in acquisto: `piano`, `stato_immobile` (es. "ristrutturato", "buono", "da ristrutturare"), `classe_energetica`, `venditore` ("privato" | "agenzia").
 - **stato**:
   - affitto: `nuovo`, `contattare`, `scritto`, `visita`, `scartato`, `affittato`;
   - acquisto: `nuovo`, `contattare`, `scritto`, `visita`, `offerta` (proposta d'acquisto fatta), `scartato`, `venduto`.
   La skill crea gli annunci con `nuovo` e **non cambia mai lo stato scelto dall'utente**, salvo impostare `affittato` o `venduto` quando il post o i commenti dicono che non è più disponibile.
 - **memoria/visti**: campo `k` = mappa `{impronta: "AAAA-MM-GG"}` di tutti i post già letti (offerte e richieste), per non rileggerli né riproporli. Tenere solo gli ultimi 21 giorni (in acquisto, dove i gruppi sono più lenti, 45 giorni).
 - **prezzi**: prezzi di tutte le offerte lette, raggruppati per mese (sezione 6b).
-- **memoria/stato**: `ultima_ricerca`, `gruppi_letti`, `post_letti`, `nuovi_trovati`, `gruppi_saltati`, `modo` (`affitto` | `acquisto`: la tabella cambia stati, etichette e prezzi in base a questo campo) e facoltativi `titolo` e `criteri` (una riga) che la tabella mostra in alto.
+- **memoria/stato**: `ultima_ricerca`, `gruppi_letti`, `post_letti`, `nuovi_trovati`, `gruppi_saltati`, i dati della mappa (`linee`, `zone`, `lavoro`: sezione 6d), `modo` (`affitto` | `acquisto`: la tabella cambia stati, etichette e prezzi in base a questo campo) e facoltativi `titolo` e `criteri` (una riga) che la tabella mostra in alto.
 
 Con la tabella online: collezione `annunci` (un documento per annuncio), collezione `memoria` (documenti `visti` e `stato`) e collezione `prezzi` (un documento per mese). Ogni scrittura su un documento esistente richiede `if_version`; usare `batch` (massimo 50 scritture).
 
 ## 2. Configurazione guidata (solo al primo avvio)
 
 1. Chiedere per prima cosa se l'utente cerca casa **in affitto** o **da comprare**. Poi fare, in un unico messaggio breve, le domande per compilare `config.template.md`. Non chiedere ciò che l'utente ha già detto.
-   - **Sempre:** città; zone (linee di metro, quartieri, o un punto da raggiungere con tempo massimo); preferenze; **bagni** (vedi sotto); se la skill può iscriversi da sola a nuovi gruppi pubblici.
+   - **Sempre:** città; zone (linee di metro, quartieri); **punto da raggiungere** (es. l'ufficio: indirizzo, ora di arrivo, tempo massimo con i mezzi oppure "solo da mostrare"); preferenze; **bagni** (vedi sotto); se la skill può iscriversi da sola a nuovi gruppi pubblici.
    - **Affitto:** cosa cerca (tipologie, prezzo massimo per ciascuna, requisiti obbligatori); chi cerca (genere, lavoratore/studente, animali, coppia); **data di ingresso** (mese in cui vuole entrare); **durata minima del contratto** (es. almeno 12 mesi); se accetta di vivere con il **proprietario in casa**; se vuole poter avere **ospiti**. Bagni: per una stanza, se vuole il bagno **privato** (obbligatorio, preferito o indifferente) e con quante persone al massimo accetta di condividerlo.
    - **Acquisto:** tipologie (es. bilocale, trilocale) con il **prezzo massimo** di ciascuna; **metri quadri minimi**; numero minimo di camere e di **bagni**; piano e ascensore (es. "no piano terra", "ascensore obbligatorio sopra il secondo piano"); stato dell'immobile accettato (anche da ristrutturare?); esterni e posto auto (balcone, terrazzo, giardino, box); classe energetica minima, se gli interessa; **quando vuole entrare** (libera al rogito o va bene anche occupata da un inquilino); se accetta le **agenzie** o vuole solo privati; se escludere aste, nuda proprietà, rent to buy e quote di proprietà (di solito sì).
 2. Compilare il file (vedere `examples/roma.md` per l'affitto e `examples/roma-acquisto.md` per l'acquisto). Per le zone, aggiungere sotto ogni quartiere qualche via o fermata di riferimento, così si riconoscono gli annunci che citano solo un indirizzo. Per una linea di metro, elencare le fermate.
 3. Salvarlo come `config.md` nella cartella della skill; se non è scrivibile, in `~/.config/cerca-casa-facebook/config.md`. Se non c'è accesso al file system, mostrarlo all'utente e dirgli di salvarlo e allegarlo alle prossime richieste.
-4. Creare la **tabella** (sezione 1) e scrivere in `memoria/stato` il `modo`, un `titolo` (es. "Casa a Milano", "Compro casa a Bologna") e i `criteri` in una riga.
+4. Creare la **tabella** (sezione 1) e scrivere in `memoria/stato` i dati della mappa (sezione 6d: `linee` con le fermate e le loro coordinate, `zone`, `lavoro`), il `modo`, un `titolo` (es. "Casa a Milano", "Compro casa a Bologna") e i `criteri` in una riga.
 5. **Trovare i gruppi:**
    - aprire `https://www.facebook.com/groups/joins/` ed estrarre i gruppi a cui l'utente è già iscritto (nome + slug/ID dopo `/groups/`); tenere quelli adatti alla modalità e alla città;
    - cercare nuovi gruppi con `https://www.facebook.com/search/groups/?q=<query>`. Affitto: "affitti <città>", "stanze <città>", "affitto privati <città>", "affitti <quartiere>". Acquisto: "vendita case <città>", "compravendita immobili <città>", "case in vendita <città>", "vendo casa <città>", "case in vendita tra privati <città>", "vendita case <quartiere>". Dai risultati leggere nome, pubblico/privato, membri e "post al giorno";
@@ -140,6 +140,7 @@ Molti annunci hanno prezzo, letto, planimetria o superficie solo nelle immagini.
 
 **Punteggio**:
 - +3 zona confermata, +1 zona da verificare;
+- se c'è un punto da raggiungere: +2 tempo entro i due terzi del massimo, +1 entro il massimo;
 - +2 per ogni preferenza soddisfatta (es. bagno privato, se preferito);
 - +1 privato (non agenzia);
 - −1 per ogni dato chiave mancante (prezzo, zona, bagni, in acquisto anche i metri quadri);
@@ -151,6 +152,7 @@ Molti annunci hanno prezzo, letto, planimetria o superficie solo nelle immagini.
 **Risposta** (nella lingua di `config.md`):
 1. una riga di riepilogo: gruppi letti e saltati, post letti, quanti erano già visti, annunci nuovi;
 2. solo gli annunci **nuovi** di questo giro: **[Tipologia] – [prezzo] – [zona]**, poi:
+   - tempo fino al punto da raggiungere, se configurato;
    - affitto: disponibilità, durata del contratto, bagno;
    - acquisto: metri quadri e prezzo al metro quadro, bagni, piano, stato dell'immobile, disponibilità;
    - per entrambi: dettagli rilevanti, confronto con il prezzo della zona, eventuale avviso di annuncio ripubblicato, link e note (domande da fare all'inserzionista);
@@ -196,6 +198,27 @@ Se c'è una corrispondenza:
 
 Le offerte senza foto e con testo troppo corto (`kt` vuota) non si possono confrontare: non segnalarle.
 
+## 6d. Posizione, mappa e tempo fino al lavoro
+
+**Dati della mappa** (in `memoria/stato`, scritti alla configurazione e aggiornati se l'utente cambia zone o linee):
+- `linee`: `[{nome, fermate: [[nome, lat, lon], ...]}]`, una per linea di metro o tram indicata, con le fermate in ordine. Le linee chiamate "A", "B", "C" prendono i colori della metro; per le altre aggiungere `colore` (es. "#7a3fa0");
+- `zone`: `[{nome, lat, lon, r_m}]`, il centro di ogni quartiere preferito e un raggio indicativo in metri (400–800);
+- `lavoro`: `{nome, lat, lon, arrivo, max_minuti}` per il punto da raggiungere (es. `{nome: "Ufficio", arrivo: "9:00", max_minuti: 35}`); `max_minuti` vuoto = il tempo si mostra soltanto. Non salvare l'indirizzo in chiaro: bastano nome e coordinate.
+
+Le coordinate si trovano come sotto ("Posizione"). La tabella disegna la mappa da sola, senza servizi esterni.
+
+**Posizione di ogni annuncio** da salvare (tutte le categorie):
+1. se l'annuncio indica via e numero civico, una via o una piazza, cercarla con WebFetch su `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=it&q=<via>, <città>` e salvare `lat`/`lon` con `posizione: "precisa"` (o "approssimativa (via senza numero)");
+2. se Nominatim non risponde, aprire nel browser `https://www.google.com/maps/search/<via>, <città>` e leggere le coordinate dall'indirizzo della pagina (`@lat,lon`);
+3. se c'è solo il quartiere o la fermata, usare il centro della zona o la fermata e scrivere `posizione: "approssimativa (<zona o fermata>)"`;
+4. senza nessun indizio, non mettere coordinate: l'annuncio resta solo nella lista.
+
+**Tempo fino al punto da raggiungere** (solo se `lavoro` è configurato, solo per gli annunci `shortlist` e `quasi` con coordinate, al massimo 10 per ricerca):
+- aprire nel browser `https://www.google.com/maps/dir/?api=1&origin=<lat>,<lon>&destination=<lat lavoro>,<lon lavoro>&travelmode=transit`; se compare il banner dei cookie, rifiutare quelli non necessari;
+- leggere con il testo della pagina la durata della prima soluzione con i mezzi e le linee usate; salvare `tempo_lavoro` (minuti, numero) e `tempo_lavoro_nota` (linee e ora del calcolo). Google calcola con partenza "adesso": se la ricerca gira di sera o di notte, scriverlo nella nota perché il tempo può essere più lungo di quello dell'ora di punta;
+- se Google Maps non si apre, stimare il tempo dalla fermata più vicina (minuti a piedi + fermate × 2 minuti + cambi × 5 minuti) e scrivere "stima" nella nota;
+- **filtro**: con `max_minuti`, oltre il massimo di più di 10 minuti → scartare; fino a 10 minuti oltre → `quasi`; senza `max_minuti`, il tempo si mostra soltanto.
+
 ## 7. Esecuzione automatica con notifica
 
 Se l'ambiente offre attività pianificate, proporre all'utente di eseguire la skill 2–3 volte al giorno in affitto (es. 9, 14, 20) e 1 volta al giorno in acquisto. Il computer deve essere acceso con il browser disponibile e il login a Facebook attivo. Nell'attività scrivere un prompt autonomo che dica di eseguire questa skill in modalità automatica.
@@ -204,6 +227,7 @@ In modalità automatica:
 - non fare domande, non iscriversi a gruppi, non rispondere a domande d'ingresso;
 - eseguire tutta la procedura e salvare;
 - **notifica**: se ci sono nuovi annunci in `shortlist`, mandare all'utente un messaggio breve che rimanda alla tabella, con tipologia, prezzo, zona, link e:
+  - il tempo fino al punto da raggiungere, se configurato;
   - in affitto: disponibilità e durata;
   - in acquisto: metri quadri e prezzo al metro quadro.
 

@@ -16,6 +16,7 @@
   --warn: #9a6a00; --warn-soft: #f7ecd2;
   --bad: #a3312b; --bad-soft: #f6dedc;
   --info: #2b5c9a; --info-soft: #dfe8f5;
+  --map-bg: #eeece6;
   --metro-a: #e4572e; --metro-b: #1f62b5; --metro-c: #2a9a4a;
   --font-display: "Barlow Condensed", "Arial Narrow", sans-serif;
   --font-body: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -27,6 +28,7 @@
     --accent: #e8714c; --accent-soft: #3a241b;
     --ok: #6cc28c; --ok-soft: #1d3326; --warn: #e0b04a; --warn-soft: #362c14;
     --bad: #ec7d76; --bad-soft: #3b1f1d; --info: #82aee6; --info-soft: #1c2a3d;
+    --map-bg: #1c1b18;
     color-scheme: dark;
   }
 }
@@ -35,6 +37,7 @@
   --accent: #e8714c; --accent-soft: #3a241b;
   --ok: #6cc28c; --ok-soft: #1d3326; --warn: #e0b04a; --warn-soft: #362c14;
   --bad: #ec7d76; --bad-soft: #3b1f1d; --info: #82aee6; --info-soft: #1c2a3d;
+  --map-bg: #1c1b18;
   color-scheme: dark;
 }
 body {
@@ -131,6 +134,32 @@ select {
 .flag.price { background: var(--bg); color: var(--muted); border: 1px solid var(--line); }
 .flag.price.low { color: var(--ok); }
 .flag.price.high { color: var(--warn); }
+/* Mappa: disegnata in SVG senza tile esterne; posizioni indicative */
+.mapbox { display: flex; flex-direction: column; gap: 10px; }
+.maptools { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; justify-content: space-between; font-size: .85rem; color: var(--muted); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; border: 2px solid var(--surface); box-shadow: 0 0 0 1px var(--line); }
+.dot.shortlist { background: var(--accent); } .dot.quasi { background: var(--warn); } .dot.sospetto { background: var(--bad); } .dot.archivio { background: var(--muted); }
+.dot.lavoro { background: var(--fg); border-radius: 2px; }
+.mapframe { position: relative; border: 1px solid var(--line); border-radius: 10px; background: var(--map-bg); overflow: hidden; touch-action: none; }
+.mapframe svg { display: block; width: 100%; height: clamp(340px, 62vh, 560px); cursor: grab; user-select: none; }
+.mapframe svg.dragging { cursor: grabbing; }
+.zoom { position: absolute; right: 10px; top: 10px; display: flex; flex-direction: column; gap: 4px; }
+.zoom button, .btn {
+  appearance: none; border: 1px solid var(--line); background: var(--surface); color: var(--fg);
+  font: 600 1rem var(--font-body); border-radius: 6px; min-width: 34px; height: 34px; cursor: pointer; padding: 0 10px;
+}
+.zoom button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.mapnote { position: absolute; left: 10px; bottom: 10px; right: 56px; font-size: .78rem; color: var(--muted); }
+.mapempty { position: absolute; inset: auto 12px 12px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font-size: .88rem; color: var(--muted); }
+.mapempty strong { color: var(--fg); }
+.chk { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.m-pin { cursor: pointer; }
+.m-pin:focus-visible circle.hit { stroke: var(--fg); stroke-width: 2; }
+.m-label { font: 500 11px var(--font-body); fill: var(--muted); paint-order: stroke; stroke: var(--map-bg); stroke-width: 3px; stroke-linejoin: round; }
+.m-zone { font: 700 12px var(--font-display); letter-spacing: .06em; text-transform: uppercase; fill: var(--fg); paint-order: stroke; stroke: var(--map-bg); stroke-width: 3px; }
+.m-time { font: 500 10px var(--font-mono); fill: var(--fg); paint-order: stroke; stroke: var(--map-bg); stroke-width: 3px; }
 .prices { display: flex; flex-direction: column; gap: 18px; }
 .prices h2 { font: 700 1.15rem var(--font-display); letter-spacing: .03em; text-transform: uppercase; margin: 0 0 6px; }
 .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
@@ -160,6 +189,7 @@ th.num { text-align: right; }
     <button class="tab" role="tab" id="tab-quasi" data-tab="quasi" aria-selected="false">Quasi</button>
     <button class="tab" role="tab" id="tab-sospetto" data-tab="sospetto" aria-selected="false">Sospetti</button>
     <button class="tab" role="tab" id="tab-archivio" data-tab="archivio" aria-selected="false">Archivio</button>
+    <button class="tab" role="tab" id="tab-mappa" data-tab="mappa" aria-selected="false">Mappa</button>
     <button class="tab" role="tab" id="tab-prezzi" data-tab="prezzi" aria-selected="false">Prezzi</button>
   </div>
 
@@ -259,6 +289,173 @@ function renderPrezzi() {
   $("#list").innerHTML = `<div class="prices"><p class="hint">${acq ? "Prezzo al metro quadro delle case in vendita" : "Prezzi mensili delle offerte"} lette negli ultimi ${GIORNI_PREZZI} giorni (${recenti.length} annunci), anche fuori dai tuoi criteri. Con meno di 4 annunci in una zona il valore è solo indicativo.</p>${blocks}</div>`;
 }
 
+// ---------- Mappa ----------
+// Proiezione equirettangolare locale; nessuna tile esterna (il frame non carica immagini da altri siti).
+let mapView = null;            // { cx, cy, span } in coordinate proiettate
+let mapSel = null;             // id dell'annuncio selezionato
+let mapDrag = null;            // trascinamento in corso
+let mapArchivio = false;
+try { mapArchivio = localStorage.getItem("mapArchivio") === "1"; } catch (e) {}
+const LINE_TOKENS = { a: "var(--metro-a)", b: "var(--metro-b)", c: "var(--metro-c)" };
+const CAT_COLOR = { shortlist: "var(--accent)", quasi: "var(--warn)", sospetto: "var(--bad)" };
+const num = (v) => (typeof v === "number" && isFinite(v) ? v : null);
+
+function mapFeatures() {
+  const linee = Array.isArray(meta.linee) ? meta.linee : [];
+  const zone = Array.isArray(meta.zone) ? meta.zone : [];
+  const lav = meta.lavoro && num(meta.lavoro.lat) != null && num(meta.lavoro.lon) != null ? meta.lavoro : null;
+  const pins = rows.filter((r) => num(r.lat) != null && num(r.lon) != null)
+    .filter((r) => mapArchivio || !ARCHIVIO.has(r.stato || "nuovo"));
+  return { linee, zone, lav, pins };
+}
+function mapProject(lat0) {
+  const k = Math.cos((lat0 * Math.PI) / 180);
+  return (lat, lon) => [lon * k, -lat];
+}
+function renderMappa() {
+  const { linee, zone, lav, pins } = mapFeatures();
+  const allLat = [], allLon = [];
+  linee.forEach((l) => (l.fermate || []).forEach((f) => { allLat.push(f[1]); allLon.push(f[2]); }));
+  zone.forEach((z) => { allLat.push(z.lat); allLon.push(z.lon); });
+  pins.forEach((r) => { allLat.push(r.lat); allLon.push(r.lon); });
+  if (lav) { allLat.push(lav.lat); allLon.push(lav.lon); }
+  const conDati = rows.filter((r) => num(r.lat) != null).length;
+
+  const legend = `<div class="legend">
+      <span><i class="dot shortlist"></i>Da valutare</span><span><i class="dot quasi"></i>Quasi</span>
+      <span><i class="dot sospetto"></i>Sospetti</span>${mapArchivio ? '<span><i class="dot archivio"></i>Archivio</span>' : ""}
+      ${lav ? `<span><i class="dot lavoro"></i>${esc(lav.nome || "Lavoro")}</span>` : ""}
+    </div>
+    <label class="chk" for="map-arch"><input type="checkbox" id="map-arch"${mapArchivio ? " checked" : ""}> Mostra anche scartati e affittati</label>`;
+
+  if (!allLat.length) {
+    $("#list").innerHTML = `<div class="mapbox"><div class="maptools">${legend}</div>
+      <div class="empty"><strong>Mappa ancora vuota</strong><span>Dalla prossima ricerca ogni annuncio viene salvato con la sua posizione e compare qui, insieme alle linee della metro e alle tue zone.</span></div></div>`;
+    bindMapTools();
+    return;
+  }
+  const lat0 = allLat.reduce((a, b) => a + b, 0) / allLat.length;
+  const P = mapProject(lat0);
+  const pts = allLat.map((la, i) => P(la, allLon[i]));
+  const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+  const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+  const home = { cx: (minX + maxX) / 2, cy: (minY + maxY) / 2, span: Math.max(maxX - minX, maxY - minY, 0.01) * 1.15 };
+  if (!mapView || mapView.lat0 !== Math.round(lat0 * 100)) mapView = { ...home, lat0: Math.round(lat0 * 100) };
+
+  const sel = rows.find((r) => r._id === mapSel && num(r.lat) != null);
+  $("#list").innerHTML = `<div class="mapbox">
+      <div class="maptools">${legend}</div>
+      <div class="mapframe">
+        <svg id="mapsvg" role="img" aria-label="Mappa degli annunci con le linee della metro e le zone preferite"></svg>
+        <div class="zoom">
+          <button type="button" id="zin" aria-label="Avvicina">+</button>
+          <button type="button" id="zout" aria-label="Allontana">−</button>
+          <button type="button" id="zhome" aria-label="Mostra tutto">⤢</button>
+        </div>
+        <div class="mapnote">Posizioni indicative${conDati < rows.length ? ` · ${rows.length - conDati} annunci senza posizione` : ""}</div>
+      </div>
+      <div id="mapcard">${sel ? mapCard(sel) : `<p class="hint">Tocca un punto per vedere l'annuncio.</p>`}</div>
+    </div>`;
+  bindMapTools();
+  drawMap(P, home, { linee, zone, lav, pins });
+}
+function mapCard(r) {
+  const st = r.stato || "nuovo";
+  return `<article class="card${ARCHIVIO.has(st) ? " dim" : ""}">
+    <div class="top"><div class="title">${esc(r.titolo || r.tipologia || "Annuncio")}</div>
+      <div class="price">${esc(r.prezzo_testo || (r.prezzo ? eur(r.prezzo) + " €" : "prezzo ?"))}</div></div>
+    <div class="tags"><span class="zone">${metroPills(r.metro)}<span>${esc(r.zona || "")}</span></span>
+      ${r.tempo_lavoro != null ? `<span class="tag">${esc(meta.lavoro?.nome || "Lavoro")}: ${esc(r.tempo_lavoro)} min</span>` : ""}
+      <span class="pill s-${st}">${STATI.find((s) => s[0] === st)?.[1] || st}</span></div>
+    ${r.posizione ? `<div class="note">Posizione: ${esc(r.posizione)}</div>` : ""}
+    <div class="foot">${r.link ? `<a href="${esc(r.link)}" target="_blank" rel="noopener">Apri il post</a>` : `<span>${esc(r.gruppo || "")}</span>`}</div>
+  </article>`;
+}
+function drawMap(P, home, F) {
+  const svg = document.getElementById("mapsvg");
+  if (!svg) return;
+  const W = svg.clientWidth || 600, H = svg.clientHeight || 420;
+  const scale = Math.min(W, H) / mapView.span;
+  const zoomLv = home.span / mapView.span;
+  const T = (lat, lon) => { const [x, y] = P(lat, lon); return [(x - mapView.cx) * scale + W / 2, (y - mapView.cy) * scale + H / 2]; };
+  const out = [];
+  // zone preferite: cerchi tenui con nome
+  F.zone.forEach((z) => {
+    const [x, y] = T(z.lat, z.lon);
+    const rpx = Math.max(14, ((z.r_m || 700) / 111320) * scale);
+    out.push(`<circle cx="${x}" cy="${y}" r="${rpx}" fill="var(--accent-soft)" fill-opacity=".55" stroke="var(--accent)" stroke-opacity=".35" stroke-dasharray="4 4"/>`);
+    out.push(`<text class="m-zone" x="${x}" y="${y - rpx - 4}" text-anchor="middle">${esc(z.nome)}</text>`);
+  });
+  // linee metro
+  F.linee.forEach((l) => {
+    const col = LINE_TOKENS[String(l.nome || "").toLowerCase()] || esc(l.colore || "var(--info)");
+    const pts = (l.fermate || []).map((f) => T(f[1], f[2]));
+    if (pts.length > 1) out.push(`<polyline points="${pts.map((p) => p.join(",")).join(" ")}" fill="none" stroke="${col}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity=".85"/>`);
+    (l.fermate || []).forEach((f, i) => {
+      const [x, y] = pts[i];
+      out.push(`<circle cx="${x}" cy="${y}" r="3.5" fill="var(--surface)" stroke="${col}" stroke-width="2"><title>${esc(f[0])} (${esc(l.nome)})</title></circle>`);
+      if (zoomLv >= 1.8) out.push(`<text class="m-label" x="${x + 6}" y="${y + 4}">${esc(f[0])}</text>`);
+    });
+  });
+  // lavoro
+  if (F.lav) {
+    const [x, y] = T(F.lav.lat, F.lav.lon);
+    out.push(`<rect x="${x - 7}" y="${y - 7}" width="14" height="14" rx="2" fill="var(--fg)" stroke="var(--surface)" stroke-width="2"><title>${esc(F.lav.nome || "Lavoro")}</title></rect>`);
+    out.push(`<text class="m-zone" x="${x + 11}" y="${y + 4}">${esc(F.lav.nome || "Lavoro")}</text>`);
+  }
+  // annunci (il selezionato per ultimo, sopra gli altri)
+  const pins = [...F.pins].sort((a, b) => (a._id === mapSel) - (b._id === mapSel));
+  pins.forEach((r) => {
+    const [x, y] = T(r.lat, r.lon);
+    const st = r.stato || "nuovo";
+    const col = ARCHIVIO.has(st) ? "var(--muted)" : CAT_COLOR[r.categoria || "shortlist"] || "var(--accent)";
+    const on = r._id === mapSel;
+    const label = `${r.titolo || r.tipologia || "Annuncio"} · ${r.prezzo_testo || (r.prezzo ? r.prezzo + " €" : "")}`;
+    out.push(`<g class="m-pin" tabindex="0" role="button" data-id="${esc(r._id)}" aria-label="${esc(label)}">
+      <circle class="hit" cx="${x}" cy="${y}" r="${on ? 11 : 8}" fill="${col}" stroke="var(--surface)" stroke-width="${st === "nuovo" ? 3 : 2}"/>
+      ${String(r.posizione || "").startsWith("approssimativa") ? `<circle cx="${x}" cy="${y}" r="${on ? 15 : 12}" fill="none" stroke="${col}" stroke-dasharray="2 3"/>` : ""}
+      ${r.tempo_lavoro != null && (on || zoomLv >= 1.4) ? `<text class="m-time" x="${x}" y="${y - 13}" text-anchor="middle">${esc(r.tempo_lavoro)}′</text>` : ""}
+      <title>${esc(label)}</title></g>`);
+  });
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  svg.innerHTML = out.join("");
+  const pick = (id) => { mapSel = id; renderMappa(); document.querySelector(`.m-pin[data-id="${CSS.escape(id)}"]`)?.focus({ preventScroll: true }); };
+  svg.querySelectorAll(".m-pin").forEach((g) => {
+    g.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(g.dataset.id); } });
+  });
+  // trascinamento (sposta la mappa) e tocco su un punto (apre l'annuncio)
+  svg.onpointerdown = (e) => {
+    mapDrag = { x: e.clientX, y: e.clientY, cx: mapView.cx, cy: mapView.cy, pin: e.target.closest(".m-pin")?.dataset.id, moved: false };
+    svg.setPointerCapture(e.pointerId);
+  };
+  svg.onpointermove = (e) => {
+    if (!mapDrag) return;
+    const dx = e.clientX - mapDrag.x, dy = e.clientY - mapDrag.y;
+    if (!mapDrag.moved && Math.abs(dx) + Math.abs(dy) < 5) return;
+    mapDrag.moved = true; svg.classList.add("dragging");
+    mapView.cx = mapDrag.cx - dx / scale; mapView.cy = mapDrag.cy - dy / scale;
+    drawMap(P, home, F);
+  };
+  svg.onpointerup = () => {
+    const d = mapDrag; mapDrag = null; svg.classList.remove("dragging");
+    if (d && !d.moved && d.pin) pick(d.pin);
+  };
+  svg.onpointercancel = () => { mapDrag = null; svg.classList.remove("dragging"); };
+  svg.onwheel = (e) => { e.preventDefault(); zoomBy(e.deltaY < 0 ? 1.25 : 0.8, P, home, F); };
+  document.getElementById("zin").onclick = () => zoomBy(1.5, P, home, F);
+  document.getElementById("zout").onclick = () => zoomBy(1 / 1.5, P, home, F);
+  document.getElementById("zhome").onclick = () => { Object.assign(mapView, { cx: home.cx, cy: home.cy, span: home.span }); drawMap(P, home, F); };
+}
+function zoomBy(f, P, home, F) {
+  mapView.span = Math.min(home.span * 2, Math.max(home.span / 12, mapView.span / f));
+  drawMap(P, home, F);
+}
+function bindMapTools() {
+  const c = document.getElementById("map-arch");
+  if (c) c.onchange = () => { mapArchivio = c.checked; try { localStorage.setItem("mapArchivio", mapArchivio ? "1" : "0"); } catch (e) {} renderMappa(); };
+}
+window.addEventListener("resize", () => { if (tab === "mappa") renderMappa(); });
+
 // in acquisto la mediana è al metro quadro quando c'è la superficie
 function cmpClass(r) {
   if (!r.prezzo || !r.mediana_zona) return "";
@@ -276,7 +473,7 @@ function render() {
   document.querySelectorAll(".tab").forEach((b) => {
     const t = b.dataset.tab;
     b.setAttribute("aria-selected", String(t === tab));
-    if (t === "prezzi") return;
+    if (t === "prezzi" || t === "mappa") return;
     const n = rows.filter((r) => {
       const st = r.stato || "nuovo";
       if (t === "archivio") return ARCHIVIO.has(st);
@@ -304,6 +501,7 @@ function render() {
 
   STATI = isAcquisto() ? STATI_ACQUISTO : STATI_AFFITTO;
   if (tab === "prezzi") { renderPrezzi(); return; }
+  if (tab === "mappa") { renderMappa(); return; }
 
   const list = rows.filter(inTab).sort((a, b) => {
     const na = (a.stato || "nuovo") === "nuovo", nb = (b.stato || "nuovo") === "nuovo";
@@ -338,6 +536,7 @@ function render() {
         ${st === "nuovo" ? '<span class="tag new">Nuovo</span>' : ""}
         <span class="zone">${metroPills(r.metro)}<span>${esc(r.zona || "zona da verificare")}</span></span>
         ${r.tipologia ? `<span class="tag">${esc(r.tipologia)}</span>` : ""}
+        ${r.tempo_lavoro != null ? `<span class="tag">${esc(meta.lavoro?.nome || "Lavoro")}: ${esc(r.tempo_lavoro)} min</span>` : ""}
         ${r.mq ? `<span class="tag">${esc(r.mq)} m²</span>` : ""}
         ${r.bagni ? `<span class="tag">Bagni: ${esc(r.bagni)}</span>` : ""}
         ${r.disponibile_da ? `<span class="tag">${isAcquisto() ? "Disponibile" : "Libera"}: ${esc(r.disponibile_da)}</span>` : ""}

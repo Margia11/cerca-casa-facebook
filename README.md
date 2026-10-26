@@ -25,7 +25,8 @@ Chi cerca sia in affitto sia da comprare può usare due configurazioni separate.
 8. **Tabella degli annunci**: salva tutto in una pagina online privata (`assets/tabella-annunci.html`) dove segni lo stato di ogni annuncio: *nuovo*, *da contattare*, *scritto*, *visita fissata*, *scartato*, *già affittato* (in acquisto anche *proposta fatta* e *già venduto*). Gli annunci scartati non tornano più. Se la pagina online non è disponibile, usa dei file locali.
 9. **Prezzi per zona**: registra il prezzo di tutte le offerte lette e mostra, per quartiere e tipologia, mediana, minimo e massimo (in acquisto al metro quadro). Su ogni annuncio dice se il prezzo è sotto o sopra la zona, e un prezzo troppo basso viene segnalato come possibile truffa.
 10. **Annunci ripubblicati**: riconosce lo stesso annuncio (stesso testo o stesse foto, tramite un'impronta visiva) pubblicato da un altro account o con un altro prezzo, un segnale tipico di truffa.
-11. **In automatico**: se la tua versione di Claude supporta le attività pianificate, gira 2-3 volte al giorno (in acquisto basta una) e ti manda una notifica solo quando esce un annuncio nuovo compatibile.
+11. **Mappa e tempo fino al lavoro**: ogni annuncio viene salvato con la sua posizione e la tabella ha una scheda *Mappa* con gli annunci, le linee della metro e le tue zone. Se indichi un punto da raggiungere (per esempio l'ufficio), calcola quanti minuti ci vogliono con i mezzi da ogni annuncio e può scartare quelli troppo lontani.
+12. **In automatico**: se la tua versione di Claude supporta le attività pianificate, gira 2-3 volte al giorno (in acquisto basta una) e ti manda una notifica solo quando esce un annuncio nuovo compatibile.
 
 Esempio di risultato:
 

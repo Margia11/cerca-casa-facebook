@@ -58,7 +58,9 @@ Città: <!-- es. Roma, Milano, Bologna, Torino -->
 <!-- L'annuncio deve trovarsi in ALMENO UNA di queste aree. -->
 - Linee della metropolitana/tram: <!-- es. metro A (entro 10 minuti a piedi da una fermata) -->
 - Quartieri: <!-- es. Garbatella, San Paolo, Piazza Bologna -->
-- Punto da raggiungere: <!-- es. "Ufficio in via X, massimo 30 minuti con i mezzi" -->
+- Punto da raggiungere: <!-- es. "Ufficio in via X 10": la skill calcola il tempo con i mezzi da ogni annuncio -->
+- Ora di arrivo: <!-- es. 9:00 -->
+- Tempo massimo con i mezzi: <!-- es. 35 minuti (oltre si scarta, fino a +10 è "quasi"), oppure "solo da mostrare" -->
 - Zone da escludere: <!-- es. Tor Bella Monaca -->
 
 ## Preferenze (danno punti in più, non sono obbligatorie)

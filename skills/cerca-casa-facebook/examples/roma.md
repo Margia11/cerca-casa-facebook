@@ -41,6 +41,9 @@ Città: Roma
   - Repubblica (via Nazionale, Termini, Sallustiano, Castro Pretorio)
   - Circo Massimo (Aventino, San Saba, piazza Albania; metro B Circo Massimo)
   - Colosseo (Monti, Celio, via Cavour, via Labicana; metro B Colosseo e Cavour, metro C Colosseo)
+- Punto da raggiungere: ufficio in via Nazionale 200
+- Ora di arrivo: 9:00
+- Tempo massimo con i mezzi: 35 minuti
 
 ## Preferenze (danno punti in più, non sono obbligatorie)
 - condizionatore
