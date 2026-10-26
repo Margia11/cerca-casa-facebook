@@ -365,7 +365,7 @@ function mapCard(r) {
     <div class="top"><div class="title">${esc(r.titolo || r.tipologia || "Annuncio")}</div>
       <div class="price">${esc(r.prezzo_testo || (r.prezzo ? eur(r.prezzo) + " €" : "prezzo ?"))}</div></div>
     <div class="tags"><span class="zone">${metroPills(r.metro)}<span>${esc(r.zona || "")}</span></span>
-      ${r.tempo_lavoro != null ? `<span class="tag">${esc(meta.lavoro?.nome || "Lavoro")}: ${esc(r.tempo_lavoro)} min</span>` : ""}
+      ${r.tempo_lavoro != null ? `<span class="tag">${esc(meta.lavoro?.nome || "Lavoro")}: ${esc(r.tempo_lavoro_testo || r.tempo_lavoro + " min")}</span>` : ""}
       <span class="pill s-${st}">${STATI.find((s) => s[0] === st)?.[1] || st}</span></div>
     ${r.posizione ? `<div class="note">Posizione: ${esc(r.posizione)}</div>` : ""}
     <div class="foot">${r.link ? `<a href="${esc(r.link)}" target="_blank" rel="noopener">Apri il post</a>` : `<span>${esc(r.gruppo || "")}</span>`}</div>
@@ -536,7 +536,7 @@ function render() {
         ${st === "nuovo" ? '<span class="tag new">Nuovo</span>' : ""}
         <span class="zone">${metroPills(r.metro)}<span>${esc(r.zona || "zona da verificare")}</span></span>
         ${r.tipologia ? `<span class="tag">${esc(r.tipologia)}</span>` : ""}
-        ${r.tempo_lavoro != null ? `<span class="tag">${esc(meta.lavoro?.nome || "Lavoro")}: ${esc(r.tempo_lavoro)} min</span>` : ""}
+        ${r.tempo_lavoro != null ? `<span class="tag">${esc(meta.lavoro?.nome || "Lavoro")}: ${esc(r.tempo_lavoro_testo || r.tempo_lavoro + " min")}</span>` : ""}
         ${r.mq ? `<span class="tag">${esc(r.mq)} m²</span>` : ""}
         ${r.bagni ? `<span class="tag">Bagni: ${esc(r.bagni)}</span>` : ""}
         ${r.disponibile_da ? `<span class="tag">${isAcquisto() ? "Disponibile" : "Libera"}: ${esc(r.disponibile_da)}</span>` : ""}
