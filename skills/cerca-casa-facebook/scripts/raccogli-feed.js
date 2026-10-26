@@ -35,7 +35,7 @@ window.__cc = { seen: {}, done: false, steps: 0, giaVisti: 0, fermatoPrima: fals
         /Nessuna descrizione[^\n]*|Potrebbe essere[^\n]*|No photo description[^\n]*|May be an image[^\n]*|Post condiviso|Visualizza altri commenti|View more comments/g,
         ''
       )
-      .replace(/(.͏\n)+/g, '') // caratteri offuscati che Facebook inserisce vicino alla data
+      .replace(new RegExp('(.' + String.fromCharCode(0x34f) + '\\n)+', 'g'), '') // caratteri invisibili che Facebook mette vicino alla data
       .replace(/\n\s*\n/g, '\n')
       .trim();
 
