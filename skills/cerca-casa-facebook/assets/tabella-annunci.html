@@ -313,7 +313,9 @@ function render() {
         ${st === "nuovo" ? '<span class="tag new">Nuovo</span>' : ""}
         <span class="zone">${metroPills(r.metro)}<span>${esc(r.zona || "zona da verificare")}</span></span>
         ${r.tipologia ? `<span class="tag">${esc(r.tipologia)}</span>` : ""}
+        ${r.disponibile_da ? `<span class="tag">Libera: ${esc(r.disponibile_da)}</span>` : ""}
         ${r.durata ? `<span class="tag">Contratto: ${esc(r.durata)}</span>` : ""}
+        ${r.proprietario ? `<span class="tag">Proprietario: ${esc(r.proprietario)}</span>` : ""}
       </div>
       ${r.dettagli ? `<div class="details">${esc(r.dettagli)}</div>` : ""}
       ${r.ripubblicato ? `<div class="flag warn"><b>Ripubblicato</b><span>${esc(r.ripubblicato)}</span></div>` : ""}

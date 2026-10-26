@@ -11,6 +11,8 @@ Città: Roma
 - Persone che si trasferiscono: 1
 - Animali: no
 - Fumatore: no
+- Proprietario in casa: no, lo escludo
+- Ospiti: devo poter avere ospiti (escludi chi li vieta)
 
 ## Cosa cerco
 
@@ -20,7 +22,7 @@ Città: Roma
 | Monolocale (o bilocale piccolo) | 750 | — |
 
 - Spese escluse: tollero fino a 50 € oltre il budget, se le spese sono a parte.
-- Data di ingresso: appena possibile
+- Data di ingresso: gennaio 2027
 - Durata minima del contratto: almeno 12 mesi (scartare disponibilità più brevi; se la durata non è indicata, chiederla)
 - Contratto: preferito
 

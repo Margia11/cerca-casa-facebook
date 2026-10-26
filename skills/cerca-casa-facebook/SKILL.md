@@ -1,6 +1,6 @@
 ---
 name: cerca-casa-facebook
-description: Cerca stanze, monolocali o appartamenti in affitto nei gruppi Facebook di una città secondo i criteri personali salvati in config.md, ricorda gli annunci già visti, li salva in una tabella con lo stato di ciascuno, mostra i prezzi tipici per zona, riconosce gli annunci ripubblicati, legge le foto dei candidati e può girare in automatico con notifica. Al primo avvio guida la configurazione e trova i gruppi giusti. Usare quando l'utente chiede di cercare casa o stanza su Facebook o lancia /cerca-casa-facebook.
+description: Cerca stanze, monolocali o appartamenti in affitto nei gruppi Facebook di una città secondo i criteri personali salvati in config.md, ricorda gli annunci già visti, li salva in una tabella con lo stato di ciascuno, filtra per data di ingresso, durata del contratto, proprietario in casa e ospiti, mostra i prezzi tipici per zona, riconosce gli annunci ripubblicati, legge le foto dei candidati e può girare in automatico con notifica. Al primo avvio guida la configurazione e trova i gruppi giusti. Usare quando l'utente chiede di cercare casa o stanza su Facebook o lancia /cerca-casa-facebook.
 ---
 
 # Cerca casa nei gruppi Facebook
@@ -27,7 +27,7 @@ Legge i post recenti dei gruppi Facebook di affitti usando il **browser dell'ute
 2. **File locali**: `annunci.json` e `memoria.json` nella stessa cartella di `config.md`. A fine ricerca, mostrare all'utente la shortlist in chat.
 
 Struttura dei dati (uguale in entrambi i casi):
-- **annunci**: un elemento per annuncio, con id = impronta `k…` calcolata dallo script (se manca, uno slug breve). Campi: `titolo`, `tipologia`, `prezzo` (numero, se noto), `prezzo_testo`, `zona`, `metro` (lettere delle linee separate da spazio, es. "A B"), `dettagli`, `note`, `link`, `altri_link` (lista), `gruppo`, `autore`, `categoria` (`shortlist` | `quasi` | `sospetto`), `stato`, `punteggio`, `trovato_il` (ISO), `foto_lette`, `durata` (es. "4+4", "12 mesi rinnovabili", "non indicata"), `mediana_zona`, `confronto_prezzo`, `ripubblicato`.
+- **annunci**: un elemento per annuncio, con id = impronta `k…` calcolata dallo script (se manca, uno slug breve). Campi: `titolo`, `tipologia`, `prezzo` (numero, se noto), `prezzo_testo`, `zona`, `metro` (lettere delle linee separate da spazio, es. "A B"), `dettagli`, `note`, `link`, `altri_link` (lista), `gruppo`, `autore`, `categoria` (`shortlist` | `quasi` | `sospetto`), `stato`, `punteggio`, `trovato_il` (ISO), `foto_lette`, `durata` (es. "4+4", "12 mesi rinnovabili", "non indicata"), `disponibile_da` (es. "gennaio 2027", "da subito", "non indicata"), `proprietario`, `mediana_zona`, `confronto_prezzo`, `ripubblicato`.
 - **stato**: `nuovo`, `contattare`, `scritto`, `visita`, `scartato`, `affittato`. La skill crea gli annunci con `nuovo` e **non cambia mai lo stato scelto dall'utente**, salvo impostare `affittato` quando il post o i commenti dicono che non è più disponibile.
 - **memoria/visti**: campo `k` = mappa `{impronta: "AAAA-MM-GG"}` di tutti i post già letti (offerte e richieste), per non rileggerli né riproporli. Tenere solo gli ultimi 21 giorni.
 - **prezzi**: prezzi di tutte le offerte lette, raggruppati per mese (sezione "Prezzi per zona").
@@ -37,7 +37,7 @@ Con la tabella online: collezione `annunci` (un documento per annuncio) e collez
 
 ## 2. Configurazione guidata (solo al primo avvio)
 
-1. Fare all'utente, in un unico messaggio breve, le domande per compilare `config.template.md`: città; cosa cerca (tipologie, prezzo massimo per ciascuna, requisiti obbligatori); chi cerca (genere, lavoratore/studente, animali, coppia); zone (linee di metro, quartieri, o un punto da raggiungere con tempo massimo); preferenze; data d'ingresso e **durata minima del contratto** (es. almeno 12 mesi); se può iscriversi da solo a nuovi gruppi pubblici. Non chiedere ciò che l'utente ha già detto.
+1. Fare all'utente, in un unico messaggio breve, le domande per compilare `config.template.md`: città; cosa cerca (tipologie, prezzo massimo per ciascuna, requisiti obbligatori); chi cerca (genere, lavoratore/studente, animali, coppia); zone (linee di metro, quartieri, o un punto da raggiungere con tempo massimo); preferenze; **data di ingresso** (mese in cui vuole entrare), **durata minima del contratto** (es. almeno 12 mesi), se accetta di vivere con il **proprietario in casa** e se vuole poter avere **ospiti**; se può iscriversi da solo a nuovi gruppi pubblici. Non chiedere ciò che l'utente ha già detto.
 2. Compilare il file (vedere `examples/roma.md`). Per le zone, aggiungere sotto ogni quartiere qualche via o fermata di riferimento, così si riconoscono gli annunci che citano solo un indirizzo. Per una linea di metro, elencare le fermate.
 3. Salvarlo come `config.md` nella cartella della skill; se non è scrivibile, in `~/.config/cerca-casa-facebook/config.md`. Se non c'è accesso al file system, mostrarlo all'utente e dirgli di salvarlo e allegarlo alle prossime richieste.
 4. Creare la **tabella** (sezione 1) e scrivere in `memoria/stato` un `titolo` (es. "Casa a Milano") e i `criteri` in una riga.
@@ -69,12 +69,15 @@ Un'offerta nuova passa se rispetta **tutto** questo:
 - corrisponde ad **almeno una** riga della tabella "Cosa cerco" di `config.md` (tipologia, prezzo, requisiti obbligatori);
 - è in **almeno una** delle zone indicate (se c'è solo una via, stimare quartiere o distanza dalla fermata; se resta il dubbio, "zona da verificare");
 - rispetta la **durata minima** di `config.md` (es. "almeno 12 mesi"): se l'annuncio indica una durata o una disponibilità più breve ("per 2 mesi", "da novembre a gennaio", "solo semestre", "subaffitto estivo") va scartato; se la durata non è indicata, tenerlo con `durata: "non indicata"` e la domanda nelle note; "transitorio" senza durata → tenerlo con la stessa domanda;
+- rispetta la **data di ingresso** di `config.md`: salvare in `disponibile_da` da quando è libera; libera nel mese di ingresso → va bene; libera il mese prima → va bene con la nota sul mese in più; libera da subito o prima ancora → `quasi` con la domanda "si può entrare a <mese>?"; libera dopo il mese di ingresso → scartare; data non indicata → tenere con la domanda nelle note;
+- se l'utente **non vuole il proprietario in casa**: scartare gli annunci dove il proprietario vive nell'appartamento ("affitto una stanza di casa mia", "convivenza con la proprietaria"); se chi pubblica vive in casa ma non si capisce se è il proprietario, tenere con la domanda nelle note; salvare in `proprietario` ("non vive in casa" | "vive in casa" | "da verificare");
+- se l'utente **vuole poter avere ospiti**: scartare gli annunci che vietano gli ospiti ("no ospiti", "ospiti non ammessi", "no ospiti a dormire"); se l'annuncio non ne parla, va bene;
 - è compatibile con "Chi cerca" (es. scartare "solo ragazze" per un uomo, "solo studenti" per un lavoratore, "no animali" per chi ha un animale);
 - non rientra in "Da scartare sempre".
 
 Prezzo: se le spese sono escluse, stimare il totale; scartare solo se supera il budget oltre la tolleranza indicata.
 
-Classificazione: `shortlist` (rispetta tutto) · `quasi` (manca un solo criterio, di poco: es. poco sopra budget, una camera in più; mai per una durata più breve del minimo) · `sospetto` (prezzo molto sotto la media della zona, caparra o pagamento prima della visita, proprietario "all'estero", Western Union/ricariche/criptovalute, commenti disattivati con pochissime informazioni, stesso testo con prezzi diversi) · scartata.
+Classificazione: `shortlist` (rispetta tutto) · `quasi` (manca un solo criterio, di poco: es. poco sopra budget, una camera in più; mai per una durata più breve del minimo, una disponibilità successiva al mese di ingresso, un proprietario in casa o ospiti vietati, se l'utente li esclude; sì per una casa libera prima del mese di ingresso) · `sospetto` (prezzo molto sotto la media della zona, caparra o pagamento prima della visita, proprietario "all'estero", Western Union/ricariche/criptovalute, commenti disattivati con pochissime informazioni, stesso testo con prezzi diversi) · scartata.
 
 Se un'offerta ha un'impronta già presente tra gli annunci salvati, non ricrearla: se compare in un altro gruppo, aggiungere il link a `altri_link`.
 
@@ -97,7 +100,7 @@ Molti annunci hanno prezzo, letto o planimetria solo nelle immagini. Per ogni an
 
 **Risposta** (nella lingua di `config.md`):
 1. una riga di riepilogo: gruppi letti e saltati, post letti, quanti erano già visti, annunci nuovi;
-2. solo gli annunci **nuovi** di questo giro: **[Tipologia] – [prezzo] – [zona]**, poi la durata del contratto, i dettagli rilevanti, il confronto con il prezzo della zona, l'eventuale avviso di annuncio ripubblicato, il link e le note (domande da fare all'inserzionista);
+2. solo gli annunci **nuovi** di questo giro: **[Tipologia] – [prezzo] – [zona]**, poi la disponibilità, la durata del contratto, i dettagli rilevanti, il confronto con il prezzo della zona, l'eventuale avviso di annuncio ripubblicato, il link e le note (domande da fare all'inserzionista);
 3. i nuovi "quasi" e "sospetti", una riga ciascuno con il motivo;
 4. se non c'è nulla di nuovo, dirlo in una riga; ricordare dove si trova la tabella.
 
@@ -144,7 +147,7 @@ Se l'ambiente offre attività pianificate, proporre all'utente di eseguire la sk
 In modalità automatica:
 - non fare domande, non iscriversi a gruppi, non rispondere a domande d'ingresso;
 - eseguire tutta la procedura e salvare;
-- **notifica**: se ci sono nuovi annunci in `shortlist`, mandare all'utente un messaggio breve (tipologia, prezzo, zona, link) che rimanda alla tabella; se ci sono solo "quasi" o "sospetti", una riga di riepilogo; se non c'è nulla di nuovo, nessun messaggio;
+- **notifica**: se ci sono nuovi annunci in `shortlist`, mandare all'utente un messaggio breve (tipologia, prezzo, zona, disponibilità, durata, link) che rimanda alla tabella; se ci sono solo "quasi" o "sospetti", una riga di riepilogo; se non c'è nulla di nuovo, nessun messaggio;
 - se il browser non è raggiungibile o Facebook chiede il login, dirlo in una riga e terminare.
 
 ## Regole

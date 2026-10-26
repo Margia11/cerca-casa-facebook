@@ -18,6 +18,8 @@ Città: <!-- es. Roma, Milano, Bologna, Torino -->
 - Persone che si trasferiscono: <!-- 1 / coppia / 2 amici ... -->
 - Animali: <!-- no / gatto / cane ... -->
 - Fumatore: <!-- sì / no -->
+- Proprietario in casa: <!-- va bene / no, lo escludo -->
+- Ospiti: <!-- devo poter avere ospiti: sì (escludi chi li vieta) / indifferente -->
 
 ## Cosa cerco
 <!-- Una riga per ogni tipologia che ti va bene. Basta che l'annuncio rispetti UNA riga. -->
@@ -28,7 +30,7 @@ Città: <!-- es. Roma, Milano, Bologna, Torino -->
 | <!-- es. Monolocale --> | <!-- 750 --> | <!-- --> |
 
 - Spese escluse: tollero fino a <!-- 50 --> € oltre il budget, se le spese sono a parte.
-- Data di ingresso: <!-- es. da dicembre 2026, oppure "subito" -->
+- Data di ingresso: <!-- mese in cui vuoi entrare, es. gennaio 2027: le case libere dopo vengono scartate, quelle libere prima segnalate con una domanda -->
 - Durata minima del contratto: <!-- es. almeno 12 mesi: gli annunci più brevi vengono scartati, quelli senza durata tenuti con una domanda -->
 - Contratto: <!-- obbligatorio registrato / preferito / indifferente -->
 

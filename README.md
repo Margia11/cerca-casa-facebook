@@ -9,13 +9,14 @@ Nei gruppi di affitti la maggior parte dei post sono di persone che *cercano* ca
 1. **Configurazione guidata**: al primo avvio Claude ti chiede città, budget, tipologia, zone e qualche informazione su di te (lavoratore o studente, animali, ecc.) e salva tutto in `config.md`.
 2. **Ricerca dei gruppi**: trova i gruppi a cui sei già iscritto e cerca quelli più attivi nella tua città e nei tuoi quartieri. Se gli dai il permesso, si iscrive ai gruppi pubblici. Non risponde mai alle domande d'ingresso senza chiederti cosa scrivere.
 3. **Lettura**: apre ogni gruppo nel **tuo** browser, dove hai già fatto il login, e scorre il feed in ordine cronologico.
-4. **Memoria**: ogni post riceve un'impronta. I post già letti non vengono riproposti, la lettura si ferma da sola quando arriva a post già visti e lo stesso annuncio pubblicato in più gruppi viene riconosciuto come uno solo.
-5. **Filtro**: scarta chi cerca casa, gli annunci incompatibili e quelli fuori zona o fuori budget, e mette da parte quelli sospetti di truffa.
-6. **Foto**: per i candidati a cui manca un dato (prezzo, letto, numero di camere), guarda fino a 5 foto dell'annuncio, dove spesso ci sono planimetria e prezzo.
-7. **Tabella degli annunci**: salva tutto in una pagina online privata (`assets/tabella-annunci.html`) dove segni lo stato di ogni annuncio: *nuovo*, *da contattare*, *scritto*, *visita fissata*, *scartato*, *già affittato*. Gli annunci scartati non tornano più. Se la pagina online non è disponibile, usa dei file locali.
-8. **Prezzi per zona**: registra il prezzo di tutte le offerte lette e mostra, per quartiere e tipologia, mediana, minimo e massimo. Su ogni annuncio dice se il prezzo è sotto o sopra la zona, e un prezzo troppo basso viene segnalato come possibile truffa.
-9. **Annunci ripubblicati**: riconosce lo stesso annuncio (stesso testo o stesse foto, tramite un'impronta visiva) pubblicato da un altro account o con un altro prezzo, un segnale tipico di truffa.
-10. **In automatico**: se la tua versione di Claude supporta le attività pianificate, gira 2-3 volte al giorno e ti manda una notifica solo quando esce un annuncio nuovo compatibile.
+4. **Requisiti che fanno perdere tempo**: oltre a budget e zona, filtra per data di ingresso, durata minima del contratto, proprietario in casa e divieto di ospiti. Se l'annuncio non lo dice, lo tiene e annota la domanda da fare.
+5. **Memoria**: ogni post riceve un'impronta. I post già letti non vengono riproposti, la lettura si ferma da sola quando arriva a post già visti e lo stesso annuncio pubblicato in più gruppi viene riconosciuto come uno solo.
+6. **Filtro**: scarta chi cerca casa, gli annunci incompatibili e quelli fuori zona o fuori budget, e mette da parte quelli sospetti di truffa.
+7. **Foto**: per i candidati a cui manca un dato (prezzo, letto, numero di camere), guarda fino a 5 foto dell'annuncio, dove spesso ci sono planimetria e prezzo.
+8. **Tabella degli annunci**: salva tutto in una pagina online privata (`assets/tabella-annunci.html`) dove segni lo stato di ogni annuncio: *nuovo*, *da contattare*, *scritto*, *visita fissata*, *scartato*, *già affittato*. Gli annunci scartati non tornano più. Se la pagina online non è disponibile, usa dei file locali.
+9. **Prezzi per zona**: registra il prezzo di tutte le offerte lette e mostra, per quartiere e tipologia, mediana, minimo e massimo. Su ogni annuncio dice se il prezzo è sotto o sopra la zona, e un prezzo troppo basso viene segnalato come possibile truffa.
+10. **Annunci ripubblicati**: riconosce lo stesso annuncio (stesso testo o stesse foto, tramite un'impronta visiva) pubblicato da un altro account o con un altro prezzo, un segnale tipico di truffa.
+11. **In automatico**: se la tua versione di Claude supporta le attività pianificate, gira 2-3 volte al giorno e ti manda una notifica solo quando esce un annuncio nuovo compatibile.
 
 Esempio di risultato:
 
