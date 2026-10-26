@@ -47,7 +47,7 @@ Con la tabella online: collezione `annunci` (un documento per annuncio), collezi
 ## 2. Configurazione guidata (solo al primo avvio)
 
 1. Chiedere per prima cosa se l'utente cerca casa **in affitto** o **da comprare**. Poi fare, in un unico messaggio breve, le domande per compilare `config.template.md`. Non chiedere ciò che l'utente ha già detto.
-   - **Sempre:** città; zone (linee di metro, quartieri); **punto da raggiungere** (es. l'ufficio: indirizzo, ora di arrivo, tempo massimo con i mezzi oppure "solo da mostrare"); preferenze; **bagni** (vedi sotto); se la skill può iscriversi da sola a nuovi gruppi pubblici.
+   - **Sempre:** città; zone (linee di metro, quartieri); **punto da raggiungere** (es. l'ufficio: indirizzo, ora di arrivo, se ci va in auto o con i mezzi, tempo massimo oppure "solo da mostrare"); preferenze; **bagni** (vedi sotto); se la skill può iscriversi da sola a nuovi gruppi pubblici.
    - **Affitto:** cosa cerca (tipologie, prezzo massimo per ciascuna, requisiti obbligatori); chi cerca (genere, lavoratore/studente, animali, coppia); **data di ingresso** (mese in cui vuole entrare); **durata minima del contratto** (es. almeno 12 mesi); se accetta di vivere con il **proprietario in casa**; se vuole poter avere **ospiti**. Bagni: per una stanza, se vuole il bagno **privato** (obbligatorio, preferito o indifferente) e con quante persone al massimo accetta di condividerlo.
    - **Acquisto:** tipologie (es. bilocale, trilocale) con il **prezzo massimo** di ciascuna; **metri quadri minimi**; numero minimo di camere e di **bagni**; piano e ascensore (es. "no piano terra", "ascensore obbligatorio sopra il secondo piano"); stato dell'immobile accettato (anche da ristrutturare?); esterni e posto auto (balcone, terrazzo, giardino, box); classe energetica minima, se gli interessa; **quando vuole entrare** (libera al rogito o va bene anche occupata da un inquilino); se accetta le **agenzie** o vuole solo privati; se escludere aste, nuda proprietà, rent to buy e quote di proprietà (di solito sì).
 2. Compilare il file (vedere `examples/roma.md` per l'affitto e `examples/roma-acquisto.md` per l'acquisto). Per le zone, aggiungere sotto ogni quartiere qualche via o fermata di riferimento, così si riconoscono gli annunci che citano solo un indirizzo. Per una linea di metro, elencare le fermate.
@@ -203,21 +203,23 @@ Le offerte senza foto e con testo troppo corto (`kt` vuota) non si possono confr
 **Dati della mappa** (in `memoria/stato`, scritti alla configurazione e aggiornati se l'utente cambia zone o linee):
 - `linee`: `[{nome, fermate: [[nome, lat, lon], ...]}]`, una per linea di metro o tram indicata, con le fermate in ordine. Le linee chiamate "A", "B", "C" prendono i colori della metro; per le altre aggiungere `colore` (es. "#7a3fa0");
 - `zone`: `[{nome, lat, lon, r_m}]`, il centro di ogni quartiere preferito e un raggio indicativo in metri (400–800);
-- `lavoro`: `{nome, lat, lon, arrivo, max_minuti}` per il punto da raggiungere (es. `{nome: "Ufficio", arrivo: "9:00", max_minuti: 35}`); `max_minuti` vuoto = il tempo si mostra soltanto. Non salvare l'indirizzo in chiaro: bastano nome e coordinate.
+- `lavoro`: `{nome, lat, lon, arrivo, mezzo, max_minuti}` per il punto da raggiungere (es. `{nome: "Ufficio", arrivo: "9:00", mezzo: "auto", max_minuti: 35}`); `max_minuti` vuoto = il tempo si mostra soltanto. Non salvare l'indirizzo in chiaro: bastano nome e coordinate.
 
 Le coordinate si trovano come sotto ("Posizione"). La tabella disegna la mappa da sola, senza servizi esterni.
 
 **Posizione di ogni annuncio** da salvare (tutte le categorie):
-1. se l'annuncio indica via e numero civico, una via o una piazza, cercarla con WebFetch su `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=it&q=<via>, <città>` e salvare `lat`/`lon` con `posizione: "precisa"` (o "approssimativa (via senza numero)");
-2. se Nominatim non risponde, aprire nel browser `https://www.google.com/maps/search/<via>, <città>` e leggere le coordinate dall'indirizzo della pagina (`@lat,lon`);
-3. se c'è solo il quartiere o la fermata, usare il centro della zona o la fermata e scrivere `posizione: "approssimativa (<zona o fermata>)"`;
-4. senza nessun indizio, non mettere coordinate: l'annuncio resta solo nella lista.
+1. se l'annuncio indica via e numero civico, una via o una piazza, aprire nel browser `https://www.google.com/maps/search/<via>,+<città>` e leggere le coordinate dall'indirizzo della pagina dopo il caricamento (`@lat,lon` oppure `!3d<lat>!4d<lon>`); salvare `lat`/`lon` con `posizione: "precisa"` (o "approssimativa (via senza numero)");
+2. se c'è solo il quartiere o la fermata, usare il centro della zona o la fermata e scrivere `posizione: "approssimativa (<zona o fermata>)"`;
+3. senza nessun indizio, non mettere coordinate: l'annuncio resta solo nella lista.
 
-**Tempo fino al punto da raggiungere** (solo se `lavoro` è configurato, solo per gli annunci `shortlist` e `quasi` con coordinate, al massimo 10 per ricerca):
-- aprire nel browser `https://www.google.com/maps/dir/?api=1&origin=<lat>,<lon>&destination=<lat lavoro>,<lon lavoro>&travelmode=transit`; se compare il banner dei cookie, rifiutare quelli non necessari;
-- leggere con il testo della pagina la durata della prima soluzione con i mezzi e le linee usate; salvare `tempo_lavoro` (minuti, numero) e `tempo_lavoro_nota` (linee e ora del calcolo). Google calcola con partenza "adesso": se la ricerca gira di sera o di notte, scriverlo nella nota perché il tempo può essere più lungo di quello dell'ora di punta;
-- se Google Maps non si apre, stimare il tempo dalla fermata più vicina (minuti a piedi + fermate × 2 minuti + cambi × 5 minuti) e scrivere "stima" nella nota;
-- **filtro**: con `max_minuti`, oltre il massimo di più di 10 minuti → scartare; fino a 10 minuti oltre → `quasi`; senza `max_minuti`, il tempo si mostra soltanto.
+**Tempo fino al punto da raggiungere** (solo se `lavoro` è configurato, solo per gli annunci `shortlist` e `quasi` con coordinate, al massimo 10 per ricerca). In `lavoro` c'è anche `mezzo`: `"auto"`, `"mezzi"` (trasporto pubblico) o `"entrambi"`.
+- Calcolare `T` = il prossimo giorno feriale all'ora di arrivo (`lavoro.arrivo`), espresso come numero di secondi dal 1/1/1970 **come se l'ora locale fosse UTC** (es. martedì 27/10/2026 alle 9:00 → `1793091600`).
+- Aprire nel browser `https://www.google.com/maps/dir/<lat>,<lon>/<lat lavoro>,<lon lavoro>/data=!4m6!4m5!2m3!6e1!7e2!8j<T>!3e<M>` con `M` = `0` per l'auto e `3` per i mezzi: Google calcola il percorso con **arrivo entro** quell'ora, quindi con il traffico tipico dell'ora di punta. Se compare il banner dei cookie, rifiutare quelli non necessari.
+- Se il pannello del browser è nascosto, Google Maps non disegna l'elenco dei percorsi finché non si fa uno screenshot (anche piccolo, `scale` 0.3): farlo, poi leggere il testo.
+- In auto il primo percorso si legge così: `/in genere ([^\n]+)\nPartenza verso le ore (\d{1,2}:\d{2})\n([\d,]+ km)\ntramite ([^\n]+)/` (es. "16-35 min", "08:25", "6,2 km", "Via Cristoforo Colombo"). Con i mezzi leggere la durata della prima soluzione e le linee usate.
+- Salvare `tempo_lavoro` = il tempo **massimo** in minuti (è quello che decide a che ora partire), `tempo_lavoro_testo` (es. "16–35 min in auto") e `tempo_lavoro_nota` (es. "In auto per arrivare alle 9:00: in genere 16–35 min, partenza verso le 8:25, via Cristoforo Colombo, 6,2 km"). Con `mezzo: "entrambi"`, `tempo_lavoro` è il minore dei due e il testo li riporta tutti e due.
+- Se Google Maps non si apre, stimare il tempo (mezzi: minuti a piedi + fermate × 2 + cambi × 5; auto: km × 3 nell'ora di punta) e scrivere "stima" nella nota.
+- **Filtro**: con `max_minuti`, oltre il massimo di più di 10 minuti → scartare; fino a 10 minuti oltre → `quasi`; senza `max_minuti`, il tempo si mostra soltanto.
 
 ## 7. Esecuzione automatica con notifica
 

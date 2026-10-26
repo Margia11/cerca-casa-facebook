@@ -40,7 +40,8 @@ Città: Roma
 - Zone da escludere: —
 - Punto da raggiungere: ufficio in via Nazionale 200
 - Ora di arrivo: 9:00
-- Tempo massimo con i mezzi: 35 minuti
+- Come ci vado: mezzi
+- Tempo massimo: 35 minuti
 
 ## Preferenze (danno punti in più, non sono obbligatorie)
 - doppi servizi

@@ -60,7 +60,8 @@ Città: <!-- es. Roma, Milano, Bologna, Torino -->
 - Quartieri: <!-- es. Garbatella, San Paolo, Piazza Bologna -->
 - Punto da raggiungere: <!-- es. "Ufficio in via X 10": la skill calcola il tempo con i mezzi da ogni annuncio -->
 - Ora di arrivo: <!-- es. 9:00 -->
-- Tempo massimo con i mezzi: <!-- es. 35 minuti (oltre si scarta, fino a +10 è "quasi"), oppure "solo da mostrare" -->
+- Come ci vado: <!-- auto / mezzi / entrambi -->
+- Tempo massimo: <!-- es. 35 minuti (oltre si scarta, fino a +10 è "quasi"), oppure "solo da mostrare" -->
 - Zone da escludere: <!-- es. Tor Bella Monaca -->
 
 ## Preferenze (danno punti in più, non sono obbligatorie)
