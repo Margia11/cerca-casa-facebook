@@ -15,7 +15,7 @@
 //         'posto_letto' posti letto e stanze doppie (se l'utente non li vuole)
 //         'breve'       affitti brevi o con una durata scritta chiaramente breve
 //         'camere3'     stanze in appartamenti con 3 o più camere (per chi accetta al massimo
-//                       un coinquilino): "con altri due ragazzi", "4 stanze", "la terza stanza"…
+//                       un coinquilino): "con altri due ragazzi", "4 stanze", "3 camere da letto", "la terza stanza"…
 //                       Non scatta se l'annuncio parla di una coppia.
 //     fuori: ['Ostia', 'Pomezia'],        // comuni o località fuori dai criteri: escludono ovunque
 //                                         // compaiano nel testo
@@ -90,7 +90,7 @@ window.__ccLeggi = async function () {
   const STUDENTI2 = /\b(affittasi|affitto|si affitta|si affittano)\s+a\s+(studente\/studentessa|studentess[ae]|studenti(\/studentesse)?|universitari)\b|\bper\s+ragazzi\s+(\(?maschi\)?\s+)?universitari\b|\briservat[oa]\s+a\s+(studenti|studentesse|universitari)\b|\bpreferibilmente studenti\b/i;
   const LAVORO = /\blavorator[ei]\b|\blavoratric[ei]\b|\blavoratori\/trici\b/i;
   // appartamenti con 3 o più camere (solo con escludi 'camere3')
-  const CAMERE3 = /\bcon\s+(altri\s+|altre\s+)?(due|2|tre|3|quattro|4)\s+(ragazz[ie]|coinquilin[ie]|inquilin[ie]|persone|studenti|lavoratori)\b|\b(abitat[oa]|condivis[oa]|occupat[oa])\s+(da|con)\s+(due|2|tre|3|quattro|4)\s+(ragazz|persone|coinquilin|inquilin|studenti|lavorator)|\bgli altri\s+(due|2|tre|3)\s+(inquilini|coinquilini|ragazzi)\b|\bda dividere (con gli altri|in)\s+(tre|3|quattro|4)\b|\b(tre|quattro|cinque|sei|3|4|5|6)\s+(stanze|camere)\b|\bla terza (stanza|camera)\b|\b(quadrilocale|pentalocale)\b/i;
+  const CAMERE3 = /\bcon\s+(altri\s+|altre\s+)?(due|2|tre|3|quattro|4)\s+(ragazz[ie]|coinquilin[ie]|inquilin[ie]|persone|studenti|lavoratori)\b|\b(abitat[oa]|condivis[oa]|occupat[oa])\s+(da|con)\s+(due|2|tre|3|quattro|4)\s+(ragazz|persone|coinquilin|inquilin|studenti|lavorator)|\bgli altri\s+(due|2|tre|3)\s+(inquilini|coinquilini|ragazzi)\b|\bda dividere (con gli altri|in)\s+(tre|3|quattro|4)\b|\b(quattro|cinque|sei|4|5|6)\s+(stanze|camere)\b|\b(tre|3)\s+camere\s+da\s+letto\b|\bla terza (stanza|camera)\b|\b(quadrilocale|pentalocale)\b/i;
   const COPPIA = /\bcoppia\b/i;
   const LETTO = /\bposto letto\b|\b(camera|stanza) doppia\b(?!\s+(ad\s+)?uso\s+singol)/i;
   const BREVE = /\b(affitt[oi] brev[ei]|a notte|per notte|settimanal[ei])\b|\bdal \d{1,2}[^\n]{0,25}\bal \d{1,2}[^\n]{0,15}(novembre|dicembre|gennaio|febbraio|marzo|aprile|maggio|giugno|luglio)\b|\bfino a (novembre|dicembre|gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|settembre)\b(?!\s*20(2[89]|[3-9]\d))|\bper (\d|due|tre|quattro|cinque|sei) mesi\b/i;
