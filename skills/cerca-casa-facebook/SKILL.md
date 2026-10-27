@@ -38,7 +38,7 @@ Struttura dei dati (uguale in entrambi i casi):
   - affitto: `nuovo`, `contattare`, `scritto`, `visita`, `scartato`, `affittato`;
   - acquisto: `nuovo`, `contattare`, `scritto`, `visita`, `offerta` (proposta d'acquisto fatta), `scartato`, `venduto`.
   La skill crea gli annunci con `nuovo` e **non cambia mai lo stato scelto dall'utente**, salvo impostare `affittato` o `venduto` quando il post o i commenti dicono che non è più disponibile.
-- **memoria/visti**: campo `k` = mappa `{impronta: "AAAA-MM-GG"}` di tutti i post già letti (offerte e richieste), per non rileggerli né riproporli. Tenere solo gli ultimi 21 giorni (in acquisto, dove i gruppi sono più lenti, 45 giorni).
+- **memoria/visti**: campo `k` = mappa `{chiave: "AAAA-MM-GG"}` di tutti i post già letti (offerte, richieste e post non pertinenti), per non rileggerli né riproporli. Ogni post ha due chiavi: l'impronta del testo `k…` e, quando il link è noto, il numero del post `p…` (preso da `/posts/<n>` o `/permalink/<n>`), che non cambia se l'autore modifica il testo. Tenere solo gli ultimi 21 giorni (in acquisto, dove i gruppi sono più lenti, 45 giorni).
 - **prezzi**: prezzi di tutte le offerte lette, raggruppati per mese (sezione 6b).
 - **memoria/stato**: `ultima_ricerca`, `gruppi_letti`, `post_letti`, `nuovi_trovati`, `gruppi_saltati`, i dati della mappa (`linee`, `zone`, `lavoro`: sezione 6d), `modo` (`affitto` | `acquisto`: la tabella cambia stati, etichette e prezzi in base a questo campo) e facoltativi `titolo` e `criteri` (una riga) che la tabella mostra in alto.
 
@@ -62,13 +62,26 @@ Con la tabella online: collezione `annunci` (un documento per annuncio), collezi
 
 ## 3. Lettura dei gruppi
 
-1. Caricare la memoria: impronte viste (`memoria/visti`), annunci già salvati e voci di prezzo degli ultimi 3 mesi (in acquisto, 6 mesi).
-2. Per ogni gruppo della lista (in ordine; se il tempo è limitato, almeno i primi 6–7):
+1. Caricare la memoria: chiavi viste (`memoria/visti`), annunci già salvati (con i loro link) e voci di prezzo degli ultimi 3 mesi (in acquisto, 6 mesi). Con la tabella online, leggerli con `out_dir` in file di lavoro invece che in conversazione.
+2. **Script nel browser, una volta per giro.** Al primo gruppo, con **una sola** chiamata JavaScript, salvare nel `sessionStorage` della scheda (Facebook svuota il `localStorage` a ogni caricamento, il `sessionStorage` no):
+   - `cc_raccogli` = il testo di `scripts/raccogli-feed.js` e `cc_leggi` = il testo di `scripts/leggi-risultati.js` (per esempio come stringhe `String.raw` fra apici inversi: gli script non ne contengono);
+   - `cc_visti` = la lista di tutte le chiavi viste;
+   - `cc_filtri` = le esclusioni sicure ricavate da `config.md` (vedere l'intestazione di `leggi-risultati.js`): `prezzo_max` (il prezzo massimo più alto + la tolleranza), `escludi` (per esempio `donne` per un uomo, `studenti` per un lavoratore, `posto_letto` se non li vuole, `breve` se c'è una durata minima) e `fuori` (località e zone fuori dai criteri che compaiono spesso negli annunci). In dubbio, non escludere.
+   Nei gruppi successivi non si rimanda il testo degli script: bastano le righe brevi qui sotto. Se lo strumento non permette `eval` o il `sessionStorage`, eseguire i file interi a ogni gruppo.
+3. Per ogni gruppo della lista (in ordine; se il tempo è limitato, almeno i primi 6–7):
    - aprire `https://www.facebook.com/groups/<ID>/?sorting_setting=CHRONOLOGICAL`;
-   - eseguire con lo strumento JavaScript del browser `window.__visti = [...]` (tutte le impronte viste) seguito, **nella stessa chiamata**, da `scripts/raccogli-feed.js`. Lo script scorre il feed in background e si ferma da solo quando incontra 8 post già letti;
-   - eseguire `window.__modo = 'affitto'` oppure `'acquisto'` seguito, **nella stessa chiamata**, da `scripts/leggi-risultati.js`: restituisce solo le **offerte nuove** (già esclusi i post visti e quelli di chi cerca casa), `impronte_lette` da aggiungere alla memoria e, per ogni offerta, `autore`, `prezzo_rilevato` (canone in affitto, prezzo totale in acquisto), `mq_rilevati`, `kt` (impronta del testo), `foto_h` (impronte delle foto) e `forse_non_disponibile`. Se `done` è `false`, rieseguirlo;
+   - avviare la raccolta: `eval(sessionStorage.getItem('cc_raccogli'))`. Lo script scorre il feed in background e si ferma da solo quando ritrova 3 post già letti di fila (il punto dove si era fermata la ricerca precedente) oppure 6 in tutto;
+   - **pannello del browser nascosto**: se il browser dice che il pannello o la scheda non è visibile, Facebook non carica i post nuovi mentre la pagina scorre. Durante la raccolta alternare uno screenshot molto piccolo (scala 0.1) e un'attesa di 3 secondi, finché `window.__cc.done` non è `true` (di solito 4–8 volte se la memoria funziona). Con il pannello visibile non serve;
+   - leggere i risultati: `window.__modo = 'affitto'` (oppure `'acquisto'`), poi `{ const s = sessionStorage.getItem('cc_leggi'); eval(s.slice(0, s.lastIndexOf('// --- avvio ---'))); }` e `await window.__ccLeggi()`. Restituisce:
+     - `impronte_lette`: tutte le chiavi dei post nuovi (offerte e non), da salvare **tutte** in memoria;
+     - `offerte`: solo le offerte nuove da valutare, con `testo` (500 caratteri), `autore`, `prezzo_rilevato` (canone in affitto, prezzo totale in acquisto), `mq_rilevati`, `kt` (impronta del testo), `foto_h` (impronte delle foto), `link` e `forse_non_disponibile`. Se servono altri dettagli, il testo completo (fino a 1500 caratteri) è in `window.__cc.seen['<k>'].t`;
+     - `escluse`: le offerte già scartate dallo script, con `motivo` e un `inizio` di 160 caratteri. Non vanno rivalutate: servono solo per i prezzi (sezione 6b) e per un controllo veloce che il motivo sia giusto.
+     Se `done` è `false`, rieseguire `await window.__ccLeggi()`;
+   - un'offerta il cui link è già tra gli annunci salvati è lo stesso annuncio: non va rivalutata;
+   - aggiungere subito le nuove `impronte_lette` a `cc_visti`, così lo stesso post pubblicato in un altro gruppo non viene riletto;
+   - annotare in un file di lavoro, gruppo per gruppo, `impronte_lette` e voci di prezzo: così il salvataggio finale non dipende dalla memoria della conversazione;
    - se `post_letti` è 0–2, il feed non si è caricato: ricaricare la pagina una volta e ripetere; se ancora vuoto, saltare il gruppo e annotarlo in `gruppi_saltati`.
-3. Un gruppo alla volta, a ritmo umano. Note:
+4. Un gruppo alla volta, a ritmo umano. Note:
    - in affitto ogni passaggio copre circa le **ultime 4–8 ore** nei gruppi molto attivi: la ricerca rende se eseguita 2–3 volte al giorno; in acquisto i gruppi sono più lenti e basta 1 volta al giorno (sezione 7);
    - la ricerca interna ai gruppi (`/groups/<ID>/search/?q=`) restituisce soprattutto vecchi post di chi cerca: non usarla;
    - se manca il link di un post, indicare gruppo, autore e orario;
@@ -147,10 +160,10 @@ Molti annunci hanno prezzo, letto, planimetria o superficie solo nelle immagini.
 - solo in affitto: +1 spese incluse, +1 contratto regolare;
 - solo in acquisto: +1 libera al rogito, +1 prezzo al metro quadro sotto la mediana della zona.
 
-**Salvataggio**: aggiungere i nuovi annunci con `stato: "nuovo"`; aggiornare quelli esistenti solo per `altri_link` o `affittato`/`venduto`; aggiungere a `memoria/visti` tutte le `impronte_lette` con la data di oggi (togliendo quelle oltre 21 giorni, 45 in acquisto); aggiungere le nuove voci di prezzo al mese corrente in `prezzi`; aggiornare `memoria/stato`.
+**Salvataggio**: aggiungere i nuovi annunci con `stato: "nuovo"`; aggiornare quelli esistenti solo per `altri_link` o `affittato`/`venduto`; aggiungere a `memoria/visti` **tutte** le `impronte_lette` di **tutti** i gruppi (chiavi `k…` e `p…`) con la data di oggi, togliendo quelle oltre 21 giorni (45 in acquisto); prima di scrivere, controllare che le chiavi nuove siano almeno quante i post nuovi letti nel giro: se sono molte meno, qualcosa è andato perso. Aggiungere le nuove voci di prezzo al mese corrente in `prezzi`, senza duplicare quelle già presenti (stessa `k`, oppure stesso autore e stesso prezzo); aggiornare `memoria/stato` (con la tabella online usare `update`, lasciando `linee`, `zone` e `lavoro` come sono).
 
 **Risposta** (nella lingua di `config.md`):
-1. una riga di riepilogo: gruppi letti e saltati, post letti, quanti erano già visti, annunci nuovi;
+1. una riga di riepilogo: gruppi letti e saltati, post letti, quanti erano già visti, quante offerte escluse dallo script, annunci nuovi;
 2. solo gli annunci **nuovi** di questo giro: **[Tipologia] – [prezzo] – [zona]**, poi:
    - tempo fino al punto da raggiungere, se configurato;
    - affitto: disponibilità, durata del contratto, bagno;
@@ -214,11 +227,11 @@ Le coordinate si trovano come sotto ("Posizione"). La tabella disegna la mappa d
 
 **Tempo fino al punto da raggiungere** (solo se `lavoro` è configurato, solo per gli annunci `shortlist` e `quasi` con coordinate, al massimo 10 per ricerca). In `lavoro` c'è anche `mezzo`: `"auto"`, `"mezzi"` (trasporto pubblico) o `"entrambi"`.
 - Calcolare `T` = il prossimo giorno feriale all'ora di arrivo (`lavoro.arrivo`), espresso come numero di secondi dal 1/1/1970 **come se l'ora locale fosse UTC** (es. martedì 27/10/2026 alle 9:00 → `1793091600`).
-- Aprire nel browser `https://www.google.com/maps/dir/<lat>,<lon>/<lat lavoro>,<lon lavoro>/data=!4m6!4m5!2m3!6e1!7e2!8j<T>!3e<M>` con `M` = `0` per l'auto e `3` per i mezzi: Google calcola il percorso con **arrivo entro** quell'ora, quindi con il traffico tipico dell'ora di punta. Se compare il banner dei cookie, rifiutare quelli non necessari.
+- Aprire nel browser `https://www.google.com/maps/dir/<lat>,<lon>/<lat lavoro>,<lon lavoro>/data=!4m6!4m5!2m3!6e1!7e2!8j<T>!3e<M>` con `M` = `0` per l'auto e `3` per i mezzi: Google calcola il percorso con **arrivo entro** quell'ora, quindi con il traffico tipico dell'ora di punta. Se compare la pagina di consenso ai cookie: in modalità interattiva chiedere all'utente se rifiutare quelli non necessari; in modalità automatica non cliccare nulla e usare la stima qui sotto.
 - Se il pannello del browser è nascosto, Google Maps non disegna l'elenco dei percorsi finché non si fa uno screenshot (anche piccolo, `scale` 0.3): farlo, poi leggere il testo.
 - In auto il primo percorso si legge così: `/in genere ([^\n]+)\nPartenza verso le ore (\d{1,2}:\d{2})\n([\d,]+ km)\ntramite ([^\n]+)/` (es. "16-35 min", "08:25", "6,2 km", "Via Cristoforo Colombo"). Con i mezzi leggere la durata della prima soluzione e le linee usate.
 - Salvare `tempo_lavoro` = il tempo **massimo** in minuti (è quello che decide a che ora partire), `tempo_lavoro_testo` (es. "16–35 min in auto") e `tempo_lavoro_nota` (es. "In auto per arrivare alle 9:00: in genere 16–35 min, partenza verso le 8:25, via Cristoforo Colombo, 6,2 km"). Con `mezzo: "entrambi"`, `tempo_lavoro` è il minore dei due e il testo li riporta tutti e due.
-- Se Google Maps non si apre, stimare il tempo (mezzi: minuti a piedi + fermate × 2 + cambi × 5; auto: km × 3 nell'ora di punta) e scrivere "stima" nella nota.
+- Se Google Maps non si apre o chiede il consenso in modalità automatica, stimare il tempo (mezzi: minuti a piedi + fermate × 2 + cambi × 5; auto: km × 3 nell'ora di punta), oppure riusare quello di un annuncio già salvato a meno di 500 m, e scrivere "stima" nella nota.
 - **Filtro**: con `max_minuti`, oltre il massimo di più di 10 minuti → scartare; fino a 10 minuti oltre → `quasi`; senza `max_minuti`, il tempo si mostra soltanto.
 
 ## 7. Esecuzione automatica con notifica
