@@ -79,7 +79,7 @@ window.__ccLeggi = async function () {
   const STUDENTI = /\bsolo studenti\b|\bsolo studentesse\b|\bno lavorat(ori|rici)\b|\bsolo erasmus\b|\bsolo universitari[ei]?\b/i;
   const LETTO = /\bposto letto\b|\b(camera|stanza) doppia\b(?!\s+(ad\s+)?uso\s+singol)/i;
   const BREVE = /\b(affitt[oi] brev[ei]|a notte|per notte|settimanal[ei])\b|\bdal \d{1,2}[^\n]{0,25}\bal \d{1,2}[^\n]{0,15}(novembre|dicembre|gennaio|febbraio|marzo|aprile|maggio|giugno|luglio)\b|\bfino a (novembre|dicembre|gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|settembre)\b(?!\s*20(2[89]|[3-9]\d))|\bper (\d|due|tre|quattro|cinque|sei) mesi\b/i;
-  const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const esc = (s) => s.replace(/[.*+?^$(){}|[\]\\]/g, '\\$&');
   const FUORI = (F.fuori || []).length ? new RegExp('\\b(' + F.fuori.map(esc).join('|') + ')\\b', 'i') : null;
 
   const djb2 = (s) => {
