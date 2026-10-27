@@ -70,7 +70,7 @@ Scrivi a Claude, ad esempio:
 
 Se vuoi configurarla a mano, copia `config.template.md` come `config.md` nella stessa cartella e compilalo. In `examples/roma.md` trovi un esempio completo per l'affitto e in `examples/roma-acquisto.md` uno per l'acquisto.
 
-**Consiglio:** ogni passaggio copre circa le ultime 4-8 ore dei gruppi più attivi, quindi conviene eseguirla 2-3 volte al giorno. Grazie alla memoria, ogni esecuzione legge solo i post nuovi. Se la tua versione di Claude supporta le attività pianificate, chiedigli di farla partire in automatico, per esempio "esegui cerca-casa-facebook ogni giorno alle 9, alle 14 e alle 20".
+**Consiglio:** ogni passaggio copre circa le ultime 4-8 ore dei gruppi più attivi, quindi conviene eseguirla 2-3 volte al giorno. Grazie alla memoria, ogni esecuzione legge solo i post nuovi. Se la tua versione di Claude supporta le attività pianificate, chiedigli di farla partire in automatico, per esempio "esegui cerca-casa-facebook ogni giorno alle 9, alle 14 e alle 20". A quegli orari il computer deve essere acceso e la finestra del browser aperta (anche piccola o in un angolo): se è ridotta a icona Facebook non carica i post, e la ricerca si ferma e ti avvisa.
 
 ## Struttura
 

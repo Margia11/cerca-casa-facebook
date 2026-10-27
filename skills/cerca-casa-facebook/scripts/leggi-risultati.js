@@ -14,7 +14,16 @@
 //         'studenti'    solo studenti, no lavoratori (per un lavoratore)
 //         'posto_letto' posti letto e stanze doppie (se l'utente non li vuole)
 //         'breve'       affitti brevi o con una durata scritta chiaramente breve
-//     fuori: ['Ostia', 'Pomezia']   // nomi di località o zone fuori dai criteri
+//         'camere3'     stanze in appartamenti con 3 o più camere (per chi accetta al massimo
+//                       un coinquilino): "con altri due ragazzi", "4 stanze", "la terza stanza"…
+//                       Non scatta se l'annuncio parla di una coppia.
+//     fuori: ['Ostia', 'Pomezia'],        // comuni o località fuori dai criteri: escludono ovunque
+//                                         // compaiano nel testo
+//     fuori_zona: ['Spinaceto', 'Monteverde'],  // quartieri della città fuori dai criteri: escludono
+//                                         // solo se scritti come "zona X", "quartiere X", "a X", "in X"
+//     in_zona: ['Cornelia', 'metro A', 'Garbatella']  // fermate e zone dei criteri: se l'annuncio ne
+//                                         // nomina una, fuori_zona non scatta (es. "a 15 minuti da Tor
+//                                         // Vergata" in un annuncio a Cinecittà)
 //   }
 // Le esclusioni scattano solo quando il motivo è chiaro: nel dubbio l'offerta passa e la valuta Claude.
 //
@@ -65,7 +74,7 @@ window.__ccLeggi = async function () {
   const AFFITTATO = /\b(affittat[ao]|gi[aà] affittat|vendut[ao]|sotto compromesso|non pi[uù] disponibil|rented|sold|no longer available)\b/i;
 
   // Esclusioni sicure
-  const NON_CASA = /\b(ripetizioni|traslochi|sgomberi|posto auto|box auto|magazzino|pulizie|nuovi membri)\b/i;
+  const NON_CASA = /\b(ripetizioni|traslochi|sgomberi|posto auto|box auto|magazzino|pulizie|nuovi membri|corsi? di|cessione|casa vacanze|locazione turistica|airbnb|booking\.com|smarrit[oa]|ho perso)\b/i;
   // in affitto: vendite (case, auto, mobili); in acquisto: affitti. Guardando solo l'inizio del post.
   const VENDITA = /\b(vendo|vendesi|in vendita|si vende|vendiamo)\b/i;
   const AFFITTO = /\b(affitt\w*|canone|locazione)\b/i;
@@ -73,14 +82,25 @@ window.__ccLeggi = async function () {
     const h = b.slice(0, 150);
     return MODO === 'affitto' ? VENDITA.test(h) && !AFFITTO.test(h) : AFFITTO.test(h) && !VENDITA.test(h);
   };
-  const DONNE = /\b(solo|esclusivamente|soltanto|unicamente)\s+(a\s+|per\s+)?(ragazz[ae]|donn[ae]|studentess[ae]|lavoratric[ie]|femmin[ae])\b|\b(cerco|cercasi|cerchiamo)\s+(una\s+)?(nuova\s+)?coinquilina\b|\bper\s+(sola\s+)?(ragazza|studentessa|lavoratrice|donna)\b/i;
+  const DONNE = /\b(solo|esclusivamente|soltanto|unicamente)\s+(a\s+|per\s+)?(ragazz[ae]|donn[ae]|studentess[ae]|lavoratric[ie]|femmin[ae])\b|\b(cerco|cercasi|cerchiamo)\s+(una\s+)?(nuova\s+)?coinquilina\b|\bper\s+(sola\s+)?(ragazza|studentessa|lavoratrice|donna)\b|\b(riservat[oa]\s+a\s+)?sol[ei]\s+(donn[ae]|ragazz[ae]|studentess[ae]|lavoratric[ie])\b|\ba\s+(donna|ragazza)\s+(lavoratrice|studentessa)\b/i;
   const UOMO = /\b(ragazzo|uomo|uomini|maschi|lavoratore|studente)\b|\bo ragazzi\b/i;
   const UOMINI = /\b(solo|esclusivamente|soltanto|unicamente)\s+(a\s+|per\s+)?(ragazzi|uomini|maschi|studenti maschi|lavoratori maschi)\b|\b(cerco|cercasi|cerchiamo)\s+(un\s+)?(nuovo\s+)?coinquilino maschio\b/i;
   const STUDENTI = /\bsolo studenti\b|\bsolo studentesse\b|\bno lavorat(ori|rici)\b|\bsolo erasmus\b|\bsolo universitari[ei]?\b/i;
+  // "affittasi a studenti", "per ragazzi universitari", "riservato a studenti": solo se non cita anche i lavoratori
+  const STUDENTI2 = /\b(affittasi|affitto|si affitta|si affittano)\s+a\s+(studente\/studentessa|studentess[ae]|studenti(\/studentesse)?|universitari)\b|\bper\s+ragazzi\s+(\(?maschi\)?\s+)?universitari\b|\briservat[oa]\s+a\s+(studenti|studentesse|universitari)\b|\bpreferibilmente studenti\b/i;
+  const LAVORO = /\blavorator[ei]\b|\blavoratric[ei]\b|\blavoratori\/trici\b/i;
+  // appartamenti con 3 o più camere (solo con escludi 'camere3')
+  const CAMERE3 = /\bcon\s+(altri\s+|altre\s+)?(due|2|tre|3|quattro|4)\s+(ragazz[ie]|coinquilin[ie]|inquilin[ie]|persone|studenti|lavoratori)\b|\b(abitat[oa]|condivis[oa]|occupat[oa])\s+(da|con)\s+(due|2|tre|3|quattro|4)\s+(ragazz|persone|coinquilin|inquilin|studenti|lavorator)|\bgli altri\s+(due|2|tre|3)\s+(inquilini|coinquilini|ragazzi)\b|\bda dividere (con gli altri|in)\s+(tre|3|quattro|4)\b|\b(tre|quattro|cinque|sei|3|4|5|6)\s+(stanze|camere)\b|\bla terza (stanza|camera)\b|\b(quadrilocale|pentalocale)\b/i;
+  const COPPIA = /\bcoppia\b/i;
   const LETTO = /\bposto letto\b|\b(camera|stanza) doppia\b(?!\s+(ad\s+)?uso\s+singol)/i;
   const BREVE = /\b(affitt[oi] brev[ei]|a notte|per notte|settimanal[ei])\b|\bdal \d{1,2}[^\n]{0,25}\bal \d{1,2}[^\n]{0,15}(novembre|dicembre|gennaio|febbraio|marzo|aprile|maggio|giugno|luglio)\b|\bfino a (novembre|dicembre|gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|settembre)\b(?!\s*20(2[89]|[3-9]\d))|\bper (\d|due|tre|quattro|cinque|sei) mesi\b/i;
   const esc = (s) => s.replace(/[.*+?^$(){}|[\]\\]/g, '\\$&');
   const FUORI = (F.fuori || []).length ? new RegExp('\\b(' + F.fuori.map(esc).join('|') + ')\\b', 'i') : null;
+  // fine parola che funziona anche con le lettere accentate ("Cinecittà")
+  const FINE = '(?![a-z0-9àèéìòù])';
+  const FUORI_ZONA = (F.fuori_zona || []).length
+    ? new RegExp('\\b(zona|quartiere|in|a|localit[aà])\\s+(' + F.fuori_zona.map(esc).join('|') + ')' + FINE, 'i') : null;
+  const IN_ZONA = (F.in_zona || []).length ? new RegExp('\\b(' + F.in_zona.map(esc).join('|') + ')' + FINE, 'i') : null;
 
   const djb2 = (s) => {
     let h = 5381;
@@ -151,9 +171,11 @@ window.__ccLeggi = async function () {
     if (altroModo(b)) return MODO === 'affitto' ? 'vendita, non affitto' : 'affitto, non vendita';
     if (ESC.has('donne') && DONNE.test(b) && !UOMO.test(b)) return 'solo donne';
     if (ESC.has('uomini') && UOMINI.test(b)) return 'solo uomini';
-    if (ESC.has('studenti') && STUDENTI.test(b)) return 'solo studenti';
+    if (ESC.has('studenti') && (STUDENTI.test(b) || (STUDENTI2.test(b) && !LAVORO.test(b)))) return 'solo studenti';
     if (ESC.has('posto_letto') && LETTO.test(b)) return 'posto letto o stanza doppia';
+    if (ESC.has('camere3') && CAMERE3.test(b) && !COPPIA.test(b)) return '3 o più camere';
     if (FUORI && FUORI.test(b)) return 'fuori zona';
+    if (FUORI_ZONA && FUORI_ZONA.test(b) && !(IN_ZONA && IN_ZONA.test(b))) return 'fuori zona';
     if (ESC.has('breve') && BREVE.test(b)) return 'breve periodo';
     if (F.prezzo_max && prezzo && prezzo > F.prezzo_max) return 'prezzo troppo alto';
     return '';

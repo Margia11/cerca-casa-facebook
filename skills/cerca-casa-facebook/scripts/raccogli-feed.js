@@ -13,12 +13,18 @@
 //   p…  numero del post preso dal link /posts/<n> o /permalink/<n> (non cambia mai)
 // Un post è "già letto" se una delle due chiavi è nell'elenco.
 //
-// Lo scorrimento si ferma da solo quando ritrova 3 post già letti di fila (è arrivato al punto
-// dove si era fermata la ricerca precedente) oppure 6 in tutto. Il conteggio parte dopo il primo
-// scorrimento, così i post in evidenza in cima al gruppo non lo bloccano.
+// Lo scorrimento si ferma da solo quando ritrova 3 post letti nei GIRI PRECEDENTI di fila (è
+// arrivato al punto dove si era fermata la ricerca precedente) oppure 6 in tutto. Il conteggio parte
+// dopo il primo scorrimento, così i post in evidenza in cima al gruppo non lo bloccano.
+// I post letti in un altro gruppo durante QUESTO giro vengono saltati ma non fermano lo scorrimento
+// (gli annunci pubblicati in più gruppi lo farebbero fermare troppo presto). Per distinguerli,
+// salvare all'inizio del giro una copia delle chiavi in sessionStorage 'cc_visti_old' (o in
+// window.__vistiVecchi) e non aggiornarla durante il giro; se manca, vale l'elenco completo.
 //
-// Pannello del browser nascosto: Facebook non carica i post nuovi mentre la pagina scorre.
-// Durante la raccolta fare uno screenshot piccolo ogni ~3 secondi finché window.__cc.done è true.
+// Se Facebook non carica i post con lo scorrimento dello script (feed fermo con riquadri grigi,
+// pannello nascosto), durante la raccolta far scorrere la pagina con la rotella del mouse
+// (azione "scroll" dello strumento del browser) ogni ~3 secondi finché window.__cc.done è true.
+// Con la finestra del browser ridotta a icona non funziona niente: vedere la sezione 3.
 //
 // Per non rimandare il testo dello script a ogni gruppo:
 //   sessionStorage.setItem('cc_raccogli', <testo di questo file>)   (una volta per giro)
@@ -38,6 +44,11 @@ window.__ccRaccogli = function () {
       ? window.__visti
       : JSON.parse(sessionStorage.getItem('cc_visti') || '[]');
     const visti = new Set(elenco);
+    const elencoVecchi = Array.isArray(window.__vistiVecchi) && window.__vistiVecchi.length
+      ? window.__vistiVecchi
+      : JSON.parse(sessionStorage.getItem('cc_visti_old') || 'null') || elenco;
+    const vecchi = new Set(elencoVecchi);
+    const vecchio = (p) => vecchi.has(p.k) || (p.id && vecchi.has(p.id));
     const MORE = /^(Altro|Mostra altro|See more|Ver más|Voir plus|Mehr anzeigen|Ver mais)/;
     const clean = (t) =>
       t
@@ -68,8 +79,10 @@ window.__ccRaccogli = function () {
       if (p.visto) return;
       if (visti.has(p.k) || (p.id && visti.has(p.id))) {
         p.visto = true;
-        cc.giaVisti++;
-        if (cc.steps >= 1) cc.diFila++;
+        if (vecchio(p)) {
+          cc.giaVisti++;
+          if (cc.steps >= 1) cc.diFila++;
+        }
       } else if (!p.contato) {
         cc.diFila = 0;
       }
@@ -110,7 +123,7 @@ window.__ccRaccogli = function () {
           if (!p.l && l) {
             p.l = l;
             p.id = postId(l);
-            if (!p.visto && visti.has(p.id)) { p.visto = true; cc.giaVisti++; }
+            if (!p.visto && visti.has(p.id)) { p.visto = true; if (vecchio(p)) cc.giaVisti++; }
           }
           if (!p.img.length && img.length) p.img = img;
         }

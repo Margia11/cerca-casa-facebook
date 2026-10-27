@@ -62,23 +62,34 @@ Con la tabella online: collezione `annunci` (un documento per annuncio), collezi
 
 ## 3. Lettura dei gruppi
 
+0. **Controllo iniziale.** Prima di leggere la memoria, aprire `https://www.facebook.com/groups/joins/`, fare uno screenshot molto piccolo (scala 0.1) e leggere un po' di testo della pagina (se lo strumento ha un'azione batch, tutto in una chiamata):
+   - se lo screenshot fallisce perché la finestra del browser è ridotta a icona o non viene disegnata ("minimized", "not painting"), Facebook non caricherà i post: **fermarsi subito** senza scrivere nulla. In modalità interattiva chiedere all'utente di riaprire la finestra; in modalità automatica mandare la notifica della sezione 7;
+   - se compare la schermata di accesso, fermarsi e chiedere all'utente di accedere (in automatico: notifica e fine). Non inserire mai credenziali;
+   - se compare l'elenco dei gruppi, proseguire.
 1. Caricare la memoria: chiavi viste (`memoria/visti`), annunci già salvati (con i loro link) e voci di prezzo degli ultimi 3 mesi (in acquisto, 6 mesi). Con la tabella online, leggerli con `out_dir` in file di lavoro invece che in conversazione.
 2. **Script nel browser, una volta per giro.** Al primo gruppo, con **una sola** chiamata JavaScript, salvare nel `sessionStorage` della scheda (Facebook svuota il `localStorage` a ogni caricamento, il `sessionStorage` no):
    - `cc_raccogli` = il testo di `scripts/raccogli-feed.js` e `cc_leggi` = il testo di `scripts/leggi-risultati.js` (per esempio come stringhe `String.raw` fra apici inversi: gli script non ne contengono);
    - `cc_visti` = la lista di tutte le chiavi viste;
-   - `cc_filtri` = le esclusioni sicure ricavate da `config.md` (vedere l'intestazione di `leggi-risultati.js`): `prezzo_max` (il prezzo massimo più alto + la tolleranza), `escludi` (per esempio `donne` per un uomo, `studenti` per un lavoratore, `posto_letto` se non li vuole, `breve` se c'è una durata minima) e `fuori` (località e zone fuori dai criteri che compaiono spesso negli annunci). In dubbio, non escludere.
+   - `cc_visti_old` = una copia della stessa lista, che **non** va aggiornata durante il giro: lo scorrimento si ferma solo quando ritrova post dei giri precedenti, non quelli già letti in un altro gruppo in questo giro (gli annunci pubblicati in più gruppi lo farebbero fermare troppo presto);
+   - `cc_filtri` = le esclusioni sicure ricavate da `config.md` (vedere l'intestazione di `leggi-risultati.js`): `prezzo_max` (il prezzo massimo più alto + la tolleranza), `escludi` (per esempio `donne` per un uomo, `studenti` per un lavoratore, `posto_letto` se non li vuole, `breve` se c'è una durata minima, `camere3` se per le stanze accetta al massimo un coinquilino), `fuori` (comuni e località fuori dai criteri che compaiono spesso negli annunci), `fuori_zona` (quartieri della città fuori dai criteri) e `in_zona` (le fermate e le zone dei criteri, che impediscono a `fuori_zona` di scattare per sbaglio). In dubbio, non escludere.
    Nei gruppi successivi non si rimanda il testo degli script: bastano le righe brevi qui sotto. Se lo strumento non permette `eval` o il `sessionStorage`, eseguire i file interi a ogni gruppo.
 3. Per ogni gruppo della lista (in ordine; se il tempo è limitato, almeno i primi 6–7):
-   - aprire `https://www.facebook.com/groups/<ID>/?sorting_setting=CHRONOLOGICAL`;
-   - avviare la raccolta: `eval(sessionStorage.getItem('cc_raccogli'))`. Lo script scorre il feed in background e si ferma da solo quando ritrova 3 post già letti di fila (il punto dove si era fermata la ricerca precedente) oppure 6 in tutto;
-   - **pannello del browser nascosto**: se il browser dice che il pannello o la scheda non è visibile, Facebook non carica i post nuovi mentre la pagina scorre. Durante la raccolta alternare uno screenshot molto piccolo (scala 0.1) e un'attesa di 3 secondi, finché `window.__cc.done` non è `true` (di solito 4–8 volte se la memoria funziona). Con il pannello visibile non serve;
+   - **raccolta con la rotella, in un solo passaggio se possibile.** Se lo strumento del browser ha un'azione batch (es. `browser_batch` del browser integrato o di Claude in Chrome), mandare per ogni gruppo **un** batch con, in ordine:
+     1. JavaScript: aggiungere a `cc_visti` le `impronte_lette` del gruppo precedente (dal secondo gruppo in poi), così lo stesso post pubblicato in più gruppi non viene riletto: `{const v=JSON.parse(sessionStorage.getItem('cc_visti'));v.push(...[...]);sessionStorage.setItem('cc_visti',JSON.stringify(v));}`;
+     2. aprire `https://www.facebook.com/groups/<ID>/?sorting_setting=CHRONOLOGICAL` e attendere 2 secondi;
+     3. JavaScript: `eval(sessionStorage.getItem('cc_raccogli'))` (avvia la raccolta in background);
+     4. quattro volte: scorrimento con la rotella verso il basso al centro della pagina (azione `scroll`, 5 scatti) e attesa di 3 secondi. Molte volte Facebook carica i post nuovi solo con lo scorrimento "vero" della rotella e non con quello dello script; se il pannello del browser è nascosto, aggiungere dopo ogni attesa uno screenshot molto piccolo (scala 0.1);
+     5. JavaScript: `JSON.stringify({s:__cc.steps,d:__cc.done,n:__cc.ordine.length})`.
+     I batch hanno di solito un limite di tempo complessivo (circa 50 secondi): non aggiungere altre attese e leggere i risultati con una chiamata separata. Se l'ultimo passo dice `d:false` (gruppo molto attivo), mandare un altro batch con quattro coppie scorrimento + attesa, al massimo due volte. Senza azione batch, fare gli stessi passi uno alla volta.
+     Lo script si ferma da solo quando ritrova 3 post dei giri precedenti di fila (il punto dove si era fermata la ricerca precedente) oppure 6 in tutto;
+   - **finestra ridotta a icona**: se un'azione sul browser (scorrimento o screenshot) fallisce perché la finestra è ridotta a icona o non viene disegnata, Facebook non carica nulla e nessun trucco nella pagina lo sblocca. Non insistere: salvare ciò che è stato letto fino a quel momento, segnare i gruppi rimanenti in `gruppi_saltati` e, in modalità automatica, mandare la notifica della sezione 7;
    - leggere i risultati: `window.__modo = 'affitto'` (oppure `'acquisto'`), poi `{ const s = sessionStorage.getItem('cc_leggi'); eval(s.slice(0, s.lastIndexOf('// --- avvio ---'))); }` e `await window.__ccLeggi()`. Restituisce:
      - `impronte_lette`: tutte le chiavi dei post nuovi (offerte e non), da salvare **tutte** in memoria;
      - `offerte`: solo le offerte nuove da valutare, con `testo` (500 caratteri), `autore`, `prezzo_rilevato` (canone in affitto, prezzo totale in acquisto), `mq_rilevati`, `kt` (impronta del testo), `foto_h` (impronte delle foto), `link` e `forse_non_disponibile`. Se servono altri dettagli, il testo completo (fino a 1500 caratteri) è in `window.__cc.seen['<k>'].t`;
-     - `escluse`: le offerte già scartate dallo script, con `motivo` e un `inizio` di 160 caratteri. Non vanno rivalutate: servono solo per i prezzi (sezione 6b) e per un controllo veloce che il motivo sia giusto.
+     - `escluse`: le offerte già scartate dallo script, con `motivo` e un `inizio` di 160 caratteri. Non vanno rivalutate: servono solo per i prezzi (sezione 6b) e per un controllo veloce che il motivo sia giusto. Eccezione: un'offerta esclusa per "3 o più camere" può ancora essere un `quasi` (una camera in più) se `inizio` mostra zona e prezzo giusti: in quel caso leggere il testo completo e valutarla.
      Se `done` è `false`, rieseguire `await window.__ccLeggi()`;
    - un'offerta il cui link è già tra gli annunci salvati è lo stesso annuncio: non va rivalutata;
-   - aggiungere subito le nuove `impronte_lette` a `cc_visti`, così lo stesso post pubblicato in un altro gruppo non viene riletto;
+   - aggiungere le nuove `impronte_lette` a `cc_visti` prima del gruppo successivo (nel batch, al passo 1), così lo stesso post pubblicato in un altro gruppo non viene riletto; non toccare `cc_visti_old`;
    - annotare in un file di lavoro, gruppo per gruppo, `impronte_lette` e voci di prezzo: così il salvataggio finale non dipende dalla memoria della conversazione;
    - se `post_letti` è 0–2, il feed non si è caricato: ricaricare la pagina una volta e ripetere; se ancora vuoto, saltare il gruppo e annotarlo in `gruppi_saltati`.
 4. Un gruppo alla volta, a ritmo umano. Note:
@@ -236,7 +247,7 @@ Le coordinate si trovano come sotto ("Posizione"). La tabella disegna la mappa d
 
 ## 7. Esecuzione automatica con notifica
 
-Se l'ambiente offre attività pianificate, proporre all'utente di eseguire la skill 2–3 volte al giorno in affitto (es. 9, 14, 20) e 1 volta al giorno in acquisto. Il computer deve essere acceso con il browser disponibile e il login a Facebook attivo. Nell'attività scrivere un prompt autonomo che dica di eseguire questa skill in modalità automatica.
+Se l'ambiente offre attività pianificate, proporre all'utente di eseguire la skill 2–3 volte al giorno in affitto (es. 9, 14, 20) e 1 volta al giorno in acquisto. Il computer deve essere acceso con il browser disponibile e il login a Facebook attivo, e la **finestra del browser non deve essere ridotta a icona** (può stare piccola o in un angolo): con la finestra ridotta a icona Facebook non carica i post, e a computer spento la ricerca non può girare. Scegliere orari in cui il computer è di solito acceso e dirlo all'utente. Nell'attività scrivere un prompt autonomo che dica di eseguire questa skill in modalità automatica.
 
 In modalità automatica:
 - non fare domande, non iscriversi a gruppi, non rispondere a domande d'ingresso;
@@ -247,7 +258,8 @@ In modalità automatica:
   - in acquisto: metri quadri e prezzo al metro quadro.
 
   Se ci sono solo "quasi" o "sospetti", una riga di riepilogo; se non c'è nulla di nuovo, nessun messaggio;
-- se il browser non è raggiungibile o Facebook chiede il login, dirlo in una riga e terminare.
+- se il browser non è raggiungibile o Facebook chiede il login, dirlo in una riga e terminare;
+- se la finestra del browser è ridotta a icona (controllo iniziale della sezione 3, o durante la lettura) e non si sono potuti leggere almeno i primi 6–7 gruppi, mandare una notifica breve con quanti gruppi sono stati letti e il consiglio di lasciare la finestra aperta, anche piccola, all'ora della ricerca.
 
 ## Regole
 
